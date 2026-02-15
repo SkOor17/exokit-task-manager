@@ -1,0 +1,200 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ========================================
+// MODÈLES UTILISATEURS
+// ========================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // Hash bcrypt
+  nom       String
+  prenom    String?
+  role      Role     @default(OPERATEUR)
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tasks  Task[]
+  timers Timer[]
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  OPERATEUR
+}
+
+// ========================================
+// MODÈLES DOSSIERS CLIENTS
+// ========================================
+
+model DossierClient {
+  id             String        @id @default(uuid())
+  numeroCommande String        @unique
+  client         String
+  description    String?
+  statut         StatutDossier @default(EN_COURS)
+  dateCreation   DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relations
+  tasks Task[]
+
+  @@map("dossiers_clients")
+}
+
+enum StatutDossier {
+  EN_COURS
+  EN_ATTENTE
+  TERMINEE
+  LIVREE
+}
+
+// ========================================
+// MODÈLES TÂCHES
+// ========================================
+
+model Task {
+  id             String     @id @default(uuid())
+  titre          String
+  description    String?
+  type           TaskType
+  priorite       Int        @default(0) // 0=basse, 1=moyenne, 2=haute, 3=critique
+  statut         StatutTask @default(A_FAIRE)
+  dateEcheance   DateTime?
+  
+  // Temps (en heures décimales)
+  tempsHumain    Float      @default(0)
+  tempsMachine   Float      @default(0)
+  tempsHuilage   Float      @default(0)
+  
+  // Estimations (optionnel)
+  tempsEstimeHumain   Float?
+  tempsEstimeMachine  Float?
+  tempsEstimeHuilage  Float?
+  
+  descriptionKit String?
+  noteCompletion String? // Note ajoutée à la fin de la tâche
+  
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  // Relations
+  dossierId   String
+  dossier     DossierClient @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+
+  operateurId String?
+  operateur   User?   @relation(fields: [operateurId], references: [id], onDelete: SetNull)
+
+  timers            Timer[]
+  checklists        Checklist[]
+  ordreFabrication  OrdreFabrication?
+
+  @@map("tasks")
+  @@index([statut])
+  @@index([type])
+  @@index([operateurId])
+  @@index([dossierId])
+}
+
+enum TaskType {
+  OF         // Ordre de fabrication
+  ASSEMBLAGE
+  FINITION
+  HUILAGE
+  EMBALLAGE
+}
+
+enum StatutTask {
+  A_FAIRE
+  EN_COURS
+  EN_PAUSE
+  TERMINEE
+  VALIDEE
+}
+
+// ========================================
+// MODÈLES ORDRES DE FABRICATION
+// ========================================
+
+model OrdreFabrication {
+  id        String   @id @default(uuid())
+  numero    String   @unique
+  pieces    Json     // { nom, quantite, dimensions, etc. }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relation 1-to-1 avec Task
+  taskId String @unique
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("ordres_fabrication")
+}
+
+// ========================================
+// MODÈLES TIMERS
+// ========================================
+
+model Timer {
+  id      String    @id @default(uuid())
+  debut   DateTime  @default(now())
+  fin     DateTime?
+  duree   Int?      // Durée en secondes
+  enPause Boolean   @default(false)
+  note    String?   // Note optionnelle de fin
+
+  // Type de temps
+  typeTemps TypeTemps @default(HUMAIN)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("timers")
+  @@index([taskId])
+  @@index([userId])
+}
+
+enum TypeTemps {
+  HUMAIN
+  MACHINE
+  HUILAGE
+}
+
+// ========================================
+// MODÈLES CHECKLISTS
+// ========================================
+
+model Checklist {
+  id        String   @id @default(uuid())
+  titre     String
+  items     Json     // [{ id, label, checked }]
+  completee Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relation
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("checklists")
+}

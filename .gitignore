@@ -1,0 +1,5 @@
+# Env
+.env
+
+# DB volumes
+db-data
