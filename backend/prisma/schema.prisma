@@ -9,17 +9,17 @@ datasource db {
 }
 
 // ========================================
-// MODÈLES UTILISATEURS
+// USER MODELS
 // ========================================
 
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
-  password  String   // Hash bcrypt
-  nom       String
-  prenom    String?
-  role      Role     @default(OPERATEUR)
-  actif     Boolean  @default(true)
+  password  String   
+  lastName  String   
+  firstName String?  
+  role      Role     @default(OPERATOR)
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -33,131 +33,131 @@ model User {
 enum Role {
   ADMIN
   MANAGER
-  OPERATEUR
+  OPERATOR
 }
 
 // ========================================
-// MODÈLES DOSSIERS CLIENTS
+// CUSTOMER CASE / PROJECT MODELS
 // ========================================
 
-model DossierClient {
-  id             String        @id @default(uuid())
-  numeroCommande String        @unique
-  client         String
-  description    String?
-  statut         StatutDossier @default(EN_COURS)
-  dateCreation   DateTime      @default(now())
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+model ProjectCase {
+  id            String       @id @default(uuid())
+  orderNumber   String       @unique 
+  customer      String       
+  description   String?
+  status        CaseStatus   @default(IN_PROGRESS)
+  createdDate   DateTime     @default(now()) 
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   // Relations
   tasks Task[]
 
-  @@map("dossiers_clients")
+  @@map("project_cases")
 }
 
-enum StatutDossier {
-  EN_COURS
-  EN_ATTENTE
-  TERMINEE
-  LIVREE
+enum CaseStatus {
+  IN_PROGRESS
+  PENDING
+  COMPLETED
+  DELIVERED
 }
 
 // ========================================
-// MODÈLES TÂCHES
+// TASK MODELS
 // ========================================
 
 model Task {
-  id             String     @id @default(uuid())
-  titre          String
-  description    String?
-  type           TaskType
-  priorite       Int        @default(0) // 0=basse, 1=moyenne, 2=haute, 3=critique
-  statut         StatutTask @default(A_FAIRE)
-  dateEcheance   DateTime?
+  id              String     @id @default(uuid())
+  title           String     
+  description     String?
+  type            TaskType
+  priority        Int        @default(0) // 0=low, 1=medium, 2=high, 3=critical
+  status          TaskStatus @default(TO_DO)
+  dueDate         DateTime?  // "dateEcheance"
   
-  // Temps (en heures décimales)
-  tempsHumain    Float      @default(0)
-  tempsMachine   Float      @default(0)
-  tempsHuilage   Float      @default(0)
+  // Time (in decimal hours)
+  laborTime       Float      @default(0) // "tempsHumain"
+  machineTime     Float      @default(0) // "tempsMachine"
+  oilingTime      Float      @default(0) // "tempsHuilage"
   
-  // Estimations (optionnel)
-  tempsEstimeHumain   Float?
-  tempsEstimeMachine  Float?
-  tempsEstimeHuilage  Float?
+  // Estimates (optional)
+  estimatedLaborTime   Float?
+  estimatedMachineTime  Float?
+  estimatedOilingTime   Float?
   
-  descriptionKit String?
-  noteCompletion String? // Note ajoutée à la fin de la tâche
+  kitDescription  String?
+  completionNote  String? // Note added at the end of the task
   
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   // Relations
-  dossierId   String
-  dossier     DossierClient @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  caseId      String
+  projectCase ProjectCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
 
-  operateurId String?
-  operateur   User?   @relation(fields: [operateurId], references: [id], onDelete: SetNull)
+  operatorId  String?
+  operator    User?       @relation(fields: [operatorId], references: [id], onDelete: SetNull)
 
   timers            Timer[]
   checklists        Checklist[]
-  ordreFabrication  OrdreFabrication?
+  productionOrder   ProductionOrder?
 
   @@map("tasks")
-  @@index([statut])
+  @@index([status])
   @@index([type])
-  @@index([operateurId])
-  @@index([dossierId])
+  @@index([operatorId])
+  @@index([caseId])
 }
 
 enum TaskType {
-  OF         // Ordre de fabrication
-  ASSEMBLAGE
-  FINITION
-  HUILAGE
-  EMBALLAGE
+  PO         // Production Order (Ordre de fabrication)
+  ASSEMBLY
+  FINISHING
+  OILING
+  PACKAGING
 }
 
-enum StatutTask {
-  A_FAIRE
-  EN_COURS
-  EN_PAUSE
-  TERMINEE
-  VALIDEE
+enum TaskStatus {
+  TO_DO
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  VALIDATED
 }
 
 // ========================================
-// MODÈLES ORDRES DE FABRICATION
+// PRODUCTION ORDER MODELS
 // ========================================
 
-model OrdreFabrication {
+model ProductionOrder {
   id        String   @id @default(uuid())
-  numero    String   @unique
-  pieces    Json     // { nom, quantite, dimensions, etc. }
+  number    String   @unique
+  parts     Json     // { name, quantity, dimensions, etc. }
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relation 1-to-1 avec Task
+  // 1-to-1 Relation with Task
   taskId String @unique
   task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
-  @@map("ordres_fabrication")
+  @@map("production_orders")
 }
 
 // ========================================
-// MODÈLES TIMERS
+// TIMER MODELS
 // ========================================
 
 model Timer {
-  id      String    @id @default(uuid())
-  debut   DateTime  @default(now())
-  fin     DateTime?
-  duree   Int?      // Durée en secondes
-  enPause Boolean   @default(false)
-  note    String?   // Note optionnelle de fin
+  id        String    @id @default(uuid())
+  startTime DateTime  @default(now()) 
+  endTime   DateTime? 
+  duration  Int?      
+  isPaused  Boolean   @default(false)
+  note      String?   
 
-  // Type de temps
-  typeTemps TypeTemps @default(HUMAIN)
+  // Time category
+  timeType TimeType @default(LABOR)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -174,23 +174,23 @@ model Timer {
   @@index([userId])
 }
 
-enum TypeTemps {
-  HUMAIN
+enum TimeType {
+  LABOR
   MACHINE
-  HUILAGE
+  OILING
 }
 
 // ========================================
-// MODÈLES CHECKLISTS
+// CHECKLIST MODELS
 // ========================================
 
 model Checklist {
-  id        String   @id @default(uuid())
-  titre     String
-  items     Json     // [{ id, label, checked }]
-  completee Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  title       String
+  items       Json     // [{ id, label, checked }]
+  isCompleted Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relation
   taskId String

@@ -8,12 +8,12 @@ import {
   IsNumber,
   Min,
 } from 'class-validator';
-import { TaskType, StatutTask } from '@prisma/client';
+import { TaskType, TaskStatus } from '@prisma/client';
 
 export class CreateTaskDto {
   @IsString()
   @IsNotEmpty()
-  titre!: string;
+  title!: string;
 
   @IsString()
   @IsOptional()
@@ -26,37 +26,37 @@ export class CreateTaskDto {
   @IsInt()
   @Min(0)
   @IsOptional()
-  priorite?: number;
+  priority?: number;
 
-  @IsEnum(StatutTask)
+  @IsEnum(TaskStatus)
   @IsOptional()
-  statut?: StatutTask;
+  status?: TaskStatus;
 
   @IsDateString()
   @IsOptional()
-  dateEcheance?: string;
+  dueDate?: string;
 
   @IsNumber()
   @IsOptional()
-  tempsEstimeHumain?: number;
+  estimatedLaborTime?: number;
 
   @IsNumber()
   @IsOptional()
-  tempsEstimeMachine?: number;
+  estimatedMachineTime?: number;
 
   @IsNumber()
   @IsOptional()
-  tempsEstimeHuilage?: number;
+  estimatedOilingTime?: number;
 
   @IsString()
   @IsOptional()
-  descriptionKit?: string;
+  kitDescription?: string;
 
   @IsString()
   @IsNotEmpty()
-  dossierId!: string;
+  caseId!: string;
 
   @IsString()
   @IsOptional()
-  operateurId?: string;
+  operatorId?: string;
 }

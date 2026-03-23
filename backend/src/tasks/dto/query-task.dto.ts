@@ -1,10 +1,10 @@
 import { IsOptional, IsEnum, IsString } from 'class-validator';
-import { TaskType, StatutTask } from '@prisma/client';
+import { TaskType, TaskStatus } from '@prisma/client';
 
 export class QueryTaskDto {
-  @IsEnum(StatutTask)
+  @IsEnum(TaskStatus)
   @IsOptional()
-  statut?: StatutTask;
+  status?: TaskStatus;
 
   @IsEnum(TaskType)
   @IsOptional()
@@ -12,11 +12,11 @@ export class QueryTaskDto {
 
   @IsString()
   @IsOptional()
-  operateurId?: string;
+  operatorId?: string;
 
   @IsString()
   @IsOptional()
-  dossierId?: string;
+  caseId?: string;
 
   @IsString()
   @IsOptional()

@@ -15,23 +15,23 @@ export class TasksService {
 
   async findAll(query: QueryTaskDto, userId?: string, userRole?: Role) {
     const where: Prisma.TaskWhereInput = {
-      // Ajout conditionnel des propriétés seulement si elles existent
-      ...(query.statut && { statut: query.statut }),
+      // Mapping des nouveaux champs de filtrage
+      ...(query.status && { status: query.status }),
       ...(query.type && { type: query.type }),
-      ...(query.dossierId && { dossierId: query.dossierId }),
-      ...(query.operateurId && { operateurId: query.operateurId }),
+      ...(query.caseId && { caseId: query.caseId }),
+      ...(query.operatorId && { operatorId: query.operatorId }),
 
       // Restriction de sécurité pour l'opérateur
-      ...(userRole === Role.OPERATEUR && { operateurId: userId }),
+      ...(userRole === Role.OPERATOR && { operatorId: userId }),
 
       // Logique de recherche (Search)
       ...(query.search && {
         OR: [
-          { titre: { contains: query.search, mode: 'insensitive' } },
+          { title: { contains: query.search, mode: 'insensitive' } },
           { description: { contains: query.search, mode: 'insensitive' } },
           {
-            dossier: {
-              numeroCommande: { contains: query.search, mode: 'insensitive' },
+            projectCase: {
+              orderNumber: { contains: query.search, mode: 'insensitive' },
             },
           },
         ],
@@ -41,18 +41,18 @@ export class TasksService {
     const tasks = await this.prisma.task.findMany({
       where,
       include: {
-        dossier: {
+        projectCase: {
           select: {
             id: true,
-            numeroCommande: true,
-            client: true,
+            orderNumber: true,
+            customer: true,
           },
         },
-        operateur: {
+        operator: {
           select: {
             id: true,
-            nom: true,
-            prenom: true,
+            lastName: true,
+            firstName: true,
           },
         },
         _count: {
@@ -61,29 +61,27 @@ export class TasksService {
           },
         },
       },
-      orderBy: [{ priorite: 'desc' }, { dateEcheance: 'asc' }],
+      orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
     });
 
     const today = new Date().getTime();
     const ONE_DAY_MS = 1000 * 60 * 60 * 24;
 
-    // Calculer les jours restants
+    // Calculer les données dérivées (jours restants et temps total)
     return tasks.map((task) => {
-      const joursRestants = task.dateEcheance
-        ? Math.ceil(
-            (new Date(task.dateEcheance).getTime() - today) / ONE_DAY_MS,
-          )
+      const remainingDays = task.dueDate
+        ? Math.ceil((new Date(task.dueDate).getTime() - today) / ONE_DAY_MS)
         : null;
 
-      const tempsTotal =
-        (task.tempsHumain || 0) +
-        (task.tempsMachine || 0) +
-        (task.tempsHuilage || 0);
+      const totalTime =
+        (task.laborTime || 0) +
+        (task.machineTime || 0) +
+        (task.oilingTime || 0);
 
       return {
         ...task,
-        joursRestants,
-        tempsTotal,
+        remainingDays, // "joursRestants"
+        totalTime, // "tempsTotal"
       };
     });
   }
@@ -92,12 +90,12 @@ export class TasksService {
     const task = await this.prisma.task.findUnique({
       where: { id },
       include: {
-        dossier: true,
-        operateur: {
+        projectCase: true,
+        operator: {
           select: {
             id: true,
-            nom: true,
-            prenom: true,
+            lastName: true,
+            firstName: true,
             email: true,
           },
         },
@@ -106,53 +104,55 @@ export class TasksService {
             user: {
               select: {
                 id: true,
-                nom: true,
-                prenom: true,
+                lastName: true,
+                firstName: true,
               },
             },
           },
-          orderBy: { debut: 'desc' },
+          orderBy: { startTime: 'desc' },
         },
         checklists: true,
-        ordreFabrication: true,
+        productionOrder: true,
       },
     });
 
     if (!task) {
-      throw new NotFoundException('Tâche non trouvée');
+      throw new NotFoundException('Task not found');
     }
+
+    const ONE_DAY_MS = 1000 * 60 * 60 * 24;
 
     return {
       ...task,
-      joursRestants: task.dateEcheance
+      remainingDays: task.dueDate
         ? Math.ceil(
-            (new Date(task.dateEcheance).getTime() - new Date().getTime()) /
-              (1000 * 60 * 60 * 24),
+            (new Date(task.dueDate).getTime() - new Date().getTime()) /
+              ONE_DAY_MS,
           )
         : null,
-      tempsTotal: task.tempsHumain + task.tempsMachine + task.tempsHuilage,
+      totalTime: task.laborTime + task.machineTime + task.oilingTime,
     };
   }
 
   async create(createTaskDto: CreateTaskDto) {
-    // Vérifier que le dossier existe
-    const dossier = await this.prisma.dossierClient.findUnique({
-      where: { id: createTaskDto.dossierId },
+    // Vérifier que le dossier (case) existe
+    const projectCase = await this.prisma.projectCase.findUnique({
+      where: { id: createTaskDto.caseId },
     });
 
-    if (!dossier) {
-      throw new NotFoundException('Dossier client non trouvé');
+    if (!projectCase) {
+      throw new NotFoundException('Project case not found');
     }
 
     return this.prisma.task.create({
       data: createTaskDto,
       include: {
-        dossier: true,
-        operateur: {
+        projectCase: true,
+        operator: {
           select: {
             id: true,
-            nom: true,
-            prenom: true,
+            lastName: true,
+            firstName: true,
           },
         },
       },
@@ -168,22 +168,20 @@ export class TasksService {
     const task = await this.findOne(id);
 
     // Vérifier les permissions
-    if (userRole === Role.OPERATEUR && task.operateurId !== userId) {
-      throw new ForbiddenException(
-        'Vous ne pouvez modifier que vos propres tâches',
-      );
+    if (userRole === Role.OPERATOR && task.operatorId !== userId) {
+      throw new ForbiddenException('You can only modify your own tasks');
     }
 
     return this.prisma.task.update({
       where: { id },
       data: updateTaskDto,
       include: {
-        dossier: true,
-        operateur: {
+        projectCase: true,
+        operator: {
           select: {
             id: true,
-            nom: true,
-            prenom: true,
+            lastName: true,
+            firstName: true,
           },
         },
       },
@@ -199,6 +197,6 @@ export class TasksService {
   }
 
   async getMyTasks(userId: string) {
-    return this.findAll({ operateurId: userId }, userId, Role.OPERATEUR);
+    return this.findAll({ operatorId: userId }, userId, Role.OPERATOR);
   }
 }
