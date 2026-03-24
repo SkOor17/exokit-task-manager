@@ -40,7 +40,7 @@ export class UpdateTaskDto {
 
   @IsString()
   @IsOptional()
-  completionNote?: string;
+  completionNotes?: string;
 
   @IsString()
   @IsOptional()

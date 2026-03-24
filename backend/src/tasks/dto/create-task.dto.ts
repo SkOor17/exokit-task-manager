@@ -54,7 +54,7 @@ export class CreateTaskDto {
 
   @IsString()
   @IsNotEmpty()
-  caseId!: string;
+  workOrderId!: string;
 
   @IsString()
   @IsOptional()

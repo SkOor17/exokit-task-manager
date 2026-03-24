@@ -37,111 +37,126 @@ enum Role {
 }
 
 // ========================================
-// CUSTOMER CASE / PROJECT MODELS
+// WORK ORDER (OF) MODELS
 // ========================================
 
-model ProjectCase {
-  id            String       @id @default(uuid())
-  orderNumber   String       @unique 
-  customer      String       
-  description   String?
-  status        CaseStatus   @default(IN_PROGRESS)
-  createdDate   DateTime     @default(now()) 
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+/// Work Order = Ordre de Fabrication (OF)
+/// This is the main project/order for a client
+/// Contains all specifications, BOM, and planning
+model WorkOrder {
+  id                String          @id @default(uuid())
+  orderNumber       String          @unique // Numéro OF (ex: OF-2026-001)
+  customerName      String
+  productType       String?         // Type de produit (fenêtre, escalier, porte)
+  description       String?
+  status            WorkOrderStatus @default(PENDING)
+  
+  // Dates
+  orderDate         DateTime        @default(now())
+  expectedDelivery  DateTime?
+  actualDelivery    DateTime?
+  
+  // Technical specs
+  specifications    Json?           // Specs techniques détaillées
+  
+  // Bill of Materials (BOM)
+  billOfMaterials   Json?            // Liste des matériaux/composants
+  
+  // Pricing
+  estimatedCost     Float?
+  actualCost        Float?
+  sellingPrice      Float?
+  
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   // Relations
-  tasks Task[]
+  tasks             Task[]
 
-  @@map("project_cases")
+  @@map("work_orders")
+  @@index([status])
+  @@index([orderNumber])
+  @@index([customerName])
 }
 
-enum CaseStatus {
-  IN_PROGRESS
-  PENDING
-  COMPLETED
-  DELIVERED
+enum WorkOrderStatus {
+  PENDING           // En attente
+  IN_PROGRESS       // En cours
+  ON_HOLD           // En pause
+  COMPLETED         // Terminé
+  DELIVERED         // Livré
+  CANCELLED         // Annulé
 }
 
 // ========================================
 // TASK MODELS
 // ========================================
 
+/// Task = Une étape de production
+/// Chaque WorkOrder se décompose en plusieurs Tasks
 model Task {
-  id              String     @id @default(uuid())
-  title           String     
-  description     String?
-  type            TaskType
-  priority        Int        @default(0) // 0=low, 1=medium, 2=high, 3=critical
-  status          TaskStatus @default(TO_DO)
-  dueDate         DateTime?  // "dateEcheance"
+  id                String      @id @default(uuid())
+  title             String
+  description       String?
+  type              TaskType    // Type d'opération
+  priority          Int         @default(0) // 0=low, 1=medium, 2=high, 3=critical
+  status            TaskStatus  @default(TODO)
   
-  // Time (in decimal hours)
-  laborTime       Float      @default(0) // "tempsHumain"
-  machineTime     Float      @default(0) // "tempsMachine"
-  oilingTime      Float      @default(0) // "tempsHuilage"
+  // Dates
+  dueDate           DateTime?
+  startedAt         DateTime?
+  completedAt       DateTime?
   
-  // Estimates (optional)
-  estimatedLaborTime   Float?
-  estimatedMachineTime  Float?
-  estimatedOilingTime   Float?
+  // Time tracking (in hours - decimal)
+  estimatedHumanTime    Float?  // Temps estimé humain
+  estimatedMachineTime  Float?  // Temps estimé machine
+  estimatedOilingTime   Float?  // Temps estimé huilage
   
-  kitDescription  String?
-  completionNote  String? // Note added at the end of the task
+  actualHumanTime       Float   @default(0) // Temps réel humain
+  actualMachineTime     Float   @default(0) // Temps réel machine
+  actualOilingTime      Float   @default(0) // Temps réel huilage
   
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  // Additional info
+  kitDescription    String?     // Description du kit/setup
+  completionNotes   String?     // Notes à la fin de la tâche
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
   // Relations
-  caseId      String
-  projectCase ProjectCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  workOrderId       String
+  workOrder         WorkOrder   @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
 
-  operatorId  String?
-  operator    User?       @relation(fields: [operatorId], references: [id], onDelete: SetNull)
+  assignedToId      String?
+  assignedTo        User?       @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
 
   timers            Timer[]
   checklists        Checklist[]
-  productionOrder   ProductionOrder?
 
   @@map("tasks")
   @@index([status])
   @@index([type])
-  @@index([operatorId])
-  @@index([caseId])
+  @@index([assignedToId])
+  @@index([workOrderId])
+  @@index([dueDate])
 }
 
 enum TaskType {
-  PO         // Production Order (Ordre de fabrication)
-  ASSEMBLY
-  FINISHING
-  OILING
-  PACKAGING
+  CUTTING           // Découpe
+  MACHINING         // Usinage CNC
+  ASSEMBLY          // Assemblage
+  FINISHING         // Finition
+  OILING            // Huilage
+  PACKAGING         // Emballage
+  QUALITY_CHECK     // Contrôle qualité
 }
 
 enum TaskStatus {
-  TO_DO
-  IN_PROGRESS
-  ON_HOLD
-  COMPLETED
-  VALIDATED
-}
-
-// ========================================
-// PRODUCTION ORDER MODELS
-// ========================================
-
-model ProductionOrder {
-  id        String   @id @default(uuid())
-  number    String   @unique
-  parts     Json     // { name, quantity, dimensions, etc. }
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // 1-to-1 Relation with Task
-  taskId String @unique
-  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
-
-  @@map("production_orders")
+  TODO              // À faire
+  IN_PROGRESS       // En cours
+  PAUSED            // En pause
+  COMPLETED         // Terminée
+  VALIDATED         // Validée
 }
 
 // ========================================
@@ -149,35 +164,36 @@ model ProductionOrder {
 // ========================================
 
 model Timer {
-  id        String    @id @default(uuid())
-  startTime DateTime  @default(now()) 
-  endTime   DateTime? 
-  duration  Int?      
-  isPaused  Boolean   @default(false)
-  note      String?   
-
-  // Time category
-  timeType TimeType @default(LABOR)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String    @id @default(uuid())
+  startTime   DateTime  @default(now())
+  endTime     DateTime?
+  duration    Int?      // Duration in seconds
+  isPaused    Boolean   @default(false)
+  notes       String?   // Optional notes at end
+  
+  // Type of time being tracked
+  timeType    TimeType  @default(HUMAN)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // Relations
-  taskId String
-  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId      String
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("timers")
   @@index([taskId])
   @@index([userId])
+  @@index([startTime])
 }
 
 enum TimeType {
-  LABOR
-  MACHINE
-  OILING
+  HUMAN         // Temps humain
+  MACHINE       // Temps machine
+  OILING        // Temps huilage
 }
 
 // ========================================
@@ -187,14 +203,14 @@ enum TimeType {
 model Checklist {
   id          String   @id @default(uuid())
   title       String
-  items       Json     // [{ id, label, checked }]
+  items       Json     // Array of { id, label, checked, required }
   isCompleted Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relation
-  taskId String
-  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@map("checklists")
 }
