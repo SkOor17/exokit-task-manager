@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import { WorkOrdersModule } from './work-orders/work-orders.module';
+import { TimersModule } from './timers/timers.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { WorkOrdersModule } from './work-orders/work-orders.module';
     ConfigModule.forRoot({ isGlobal: true }),
     UsersModule,
     WorkOrdersModule,
+    TimersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
