@@ -44,5 +44,5 @@ export class UpdateTaskDto {
 
   @IsString()
   @IsOptional()
-  operatorId?: string;
+  assignedToId?: string;
 }
