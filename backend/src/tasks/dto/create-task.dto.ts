@@ -38,7 +38,7 @@ export class CreateTaskDto {
 
   @IsNumber()
   @IsOptional()
-  estimatedLaborTime?: number;
+  estimatedHumanTime?: number;
 
   @IsNumber()
   @IsOptional()
@@ -58,5 +58,5 @@ export class CreateTaskDto {
 
   @IsString()
   @IsOptional()
-  operatorId?: string;
+  assignedToId?: string;
 }
