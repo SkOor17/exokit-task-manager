@@ -4,9 +4,9 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateCaseDto } from './dto/create-project-case.dto';
-import { UpdateCaseDto } from './dto/update-project-case.dto';
 import { TaskStatus } from '@prisma/client';
+import { CreateWorkOrderDto } from '../work-orders/dto/create-work-order.dto';
+import { UpdateWorkOrderDto } from '../work-orders/dto/update-work-order.dto';
 
 /**
  * Service class responsible for managing project cases in the application.
@@ -14,7 +14,7 @@ import { TaskStatus } from '@prisma/client';
  * as well as to format project case data for presentation.
  */
 @Injectable()
-export class ProjectCasesService {
+export class WorkOrdersService {
   constructor(private prisma: PrismaService) {}
 
   /**
@@ -23,7 +23,7 @@ export class ProjectCasesService {
    * @returns An array of formatted project cases, ordered by creation date in descending order.
    */
   async findAll() {
-    const cases = await this.prisma.projectCase.findMany({
+    const workOrders = await this.prisma.workOrder.findMany({
       include: {
         tasks: {
           select: {
@@ -36,7 +36,7 @@ export class ProjectCasesService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return cases.map(formatProjectCase);
+    return workOrders.map(formatWorkOrder);
   }
 
   /**
@@ -48,12 +48,13 @@ export class ProjectCasesService {
    * @throws NotFoundException if the project case with the specified ID does not exist.
    */
   async findOne(id: string) {
-    const projectCase = await this.prisma.projectCase.findUnique({
+    const workOrder = await this.prisma.workOrder.findUnique({
       where: { id },
       include: {
         tasks: {
           include: {
-            operator: {
+            assignedTo: {
+              // Modifié ici car "operator" est devenu "assignedTo" dans le modèle Task
               select: {
                 id: true,
                 lastName: true,
@@ -66,11 +67,11 @@ export class ProjectCasesService {
       },
     });
 
-    if (!projectCase) {
+    if (!workOrder) {
       throw new NotFoundException('Project case not found');
     }
 
-    return formatProjectCase(projectCase);
+    return formatWorkOrder(workOrder);
   }
 
   /**
@@ -81,17 +82,17 @@ export class ProjectCasesService {
    * @returns The newly created project case.
    * @throws ConflictException if a project case with the same order number already exists in the database.
    */
-  async create(createCaseDto: CreateCaseDto) {
-    const existing = await this.prisma.projectCase.findUnique({
-      where: { orderNumber: createCaseDto.orderNumber },
+  async create(createWorkOrderDto: CreateWorkOrderDto) {
+    const existing = await this.prisma.workOrder.findUnique({
+      where: { orderNumber: createWorkOrderDto.orderNumber },
     });
 
     if (existing) {
       throw new ConflictException('This order number already exists');
     }
 
-    return this.prisma.projectCase.create({
-      data: createCaseDto,
+    return this.prisma.workOrder.create({
+      data: createWorkOrderDto,
     });
   }
 
@@ -103,12 +104,12 @@ export class ProjectCasesService {
    * @throws NotFoundException if the project case with the specified ID does not exist in the database.
    * @throws ConflictException if the new order number provided in the update DTO already exists for another project case in the database.
    */
-  async update(id: string, updateCaseDto: UpdateCaseDto) {
+  async update(id: string, updateWorkOrderDto: UpdateWorkOrderDto) {
     await this.findOne(id); // Vérifie que le dossier existe bien
 
-    if (updateCaseDto.orderNumber) {
-      const existing = await this.prisma.projectCase.findUnique({
-        where: { orderNumber: updateCaseDto.orderNumber },
+    if (updateWorkOrderDto.orderNumber) {
+      const existing = await this.prisma.workOrder.findUnique({
+        where: { orderNumber: updateWorkOrderDto.orderNumber },
       });
 
       if (existing && existing.id !== id) {
@@ -116,9 +117,9 @@ export class ProjectCasesService {
       }
     }
 
-    return this.prisma.projectCase.update({
+    return this.prisma.workOrder.update({
       where: { id },
-      data: updateCaseDto,
+      data: updateWorkOrderDto,
     });
   }
 
@@ -131,7 +132,7 @@ export class ProjectCasesService {
   async remove(id: string) {
     await this.findOne(id); // Vérifie que le dossier existe bien
 
-    return this.prisma.projectCase.delete({
+    return this.prisma.workOrder.delete({
       where: { id },
     });
   }
@@ -142,17 +143,17 @@ export class ProjectCasesService {
  * @param projectCase - The project case object to format, which must include a "tasks" array with "status" properties.
  * @returns The formatted project case object with additional properties: totalTasks, completedTasks, and progress.
  */
-const formatProjectCase = <T extends { tasks: { status: TaskStatus }[] }>(
-  projectCase: T,
+const formatWorkOrder = <T extends { tasks: { status: TaskStatus }[] }>(
+  workOrder: T,
 ) => {
-  const totalTasks = projectCase.tasks.length;
-  const completedTasks = projectCase.tasks.filter(
+  const totalTasks = workOrder.tasks.length;
+  const completedTasks = workOrder.tasks.filter(
     (t) =>
       t.status === TaskStatus.COMPLETED || t.status === TaskStatus.VALIDATED,
   ).length;
 
   return {
-    ...projectCase,
+    ...workOrder,
     totalTasks,
     completedTasks,
     progress:

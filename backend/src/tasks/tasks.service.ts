@@ -15,23 +15,27 @@ export class TasksService {
 
   async findAll(query: QueryTaskDto, userId?: string, userRole?: Role) {
     const where: Prisma.TaskWhereInput = {
-      // Mapping des nouveaux champs de filtrage
       ...(query.status && { status: query.status }),
       ...(query.type && { type: query.type }),
-      ...(query.caseId && { caseId: query.caseId }),
-      ...(query.operatorId && { operatorId: query.operatorId }),
+      ...(query.workOrderId && { workOrderId: query.workOrderId }),
+      ...(query.assignedToId && { assignedToId: query.assignedToId }),
 
       // Restriction de sécurité pour l'opérateur
-      ...(userRole === Role.OPERATOR && { operatorId: userId }),
+      ...(userRole === Role.OPERATOR && { assignedToId: userId }),
 
-      // Logique de recherche (Search)
+      // Logique de recherche
       ...(query.search && {
         OR: [
           { title: { contains: query.search, mode: 'insensitive' } },
           { description: { contains: query.search, mode: 'insensitive' } },
           {
-            projectCase: {
+            workOrder: {
               orderNumber: { contains: query.search, mode: 'insensitive' },
+            },
+          },
+          {
+            workOrder: {
+              customerName: { contains: query.search, mode: 'insensitive' },
             },
           },
         ],
@@ -41,14 +45,14 @@ export class TasksService {
     const tasks = await this.prisma.task.findMany({
       where,
       include: {
-        projectCase: {
+        workOrder: {
           select: {
             id: true,
             orderNumber: true,
-            customer: true,
+            customerName: true,
           },
         },
-        operator: {
+        assignedTo: {
           select: {
             id: true,
             lastName: true,
@@ -73,15 +77,15 @@ export class TasksService {
         ? Math.ceil((new Date(task.dueDate).getTime() - today) / ONE_DAY_MS)
         : null;
 
-      const totalTime =
-        (task.laborTime || 0) +
-        (task.machineTime || 0) +
-        (task.oilingTime || 0);
+      const totalActualTime =
+        (task.actualHumanTime || 0) +
+        (task.actualMachineTime || 0) +
+        (task.actualOilingTime || 0);
 
       return {
         ...task,
-        remainingDays, // "joursRestants"
-        totalTime, // "tempsTotal"
+        remainingDays,
+        totalActualTime,
       };
     });
   }
@@ -90,8 +94,8 @@ export class TasksService {
     const task = await this.prisma.task.findUnique({
       where: { id },
       include: {
-        projectCase: true,
-        operator: {
+        workOrder: true,
+        assignedTo: {
           select: {
             id: true,
             lastName: true,
@@ -112,7 +116,6 @@ export class TasksService {
           orderBy: { startTime: 'desc' },
         },
         checklists: true,
-        productionOrder: true,
       },
     });
 
@@ -130,25 +133,26 @@ export class TasksService {
               ONE_DAY_MS,
           )
         : null,
-      totalTime: task.laborTime + task.machineTime + task.oilingTime,
+      totalTime:
+        task.actualHumanTime + task.actualMachineTime + task.actualOilingTime,
     };
   }
 
   async create(createTaskDto: CreateTaskDto) {
     // Vérifier que le dossier (case) existe
-    const projectCase = await this.prisma.projectCase.findUnique({
-      where: { id: createTaskDto.caseId },
+    const workOrder = await this.prisma.workOrder.findUnique({
+      where: { id: createTaskDto.workOrderId },
     });
 
-    if (!projectCase) {
-      throw new NotFoundException('Project case not found');
+    if (!workOrder) {
+      throw new NotFoundException('Work order not found');
     }
 
     return this.prisma.task.create({
       data: createTaskDto,
       include: {
-        projectCase: true,
-        operator: {
+        workOrder: true,
+        assignedTo: {
           select: {
             id: true,
             lastName: true,
@@ -168,7 +172,7 @@ export class TasksService {
     const task = await this.findOne(id);
 
     // Vérifier les permissions
-    if (userRole === Role.OPERATOR && task.operatorId !== userId) {
+    if (userRole === Role.OPERATOR && task.assignedToId !== userId) {
       throw new ForbiddenException('You can only modify your own tasks');
     }
 
@@ -176,8 +180,8 @@ export class TasksService {
       where: { id },
       data: updateTaskDto,
       include: {
-        projectCase: true,
-        operator: {
+        workOrder: true,
+        assignedTo: {
           select: {
             id: true,
             lastName: true,
@@ -197,6 +201,6 @@ export class TasksService {
   }
 
   async getMyTasks(userId: string) {
-    return this.findAll({ operatorId: userId }, userId, Role.OPERATOR);
+    return this.findAll({ assignedToId: userId }, userId, Role.OPERATOR);
   }
 }

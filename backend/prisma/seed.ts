@@ -1,10 +1,10 @@
 import * as bcrypt from 'bcrypt';
 import {
-  CaseStatus,
   PrismaClient,
   Role,
   TaskStatus,
   TaskType,
+  WorkOrderStatus,
 } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
@@ -60,30 +60,35 @@ async function main() {
 
   console.log('✅ Users created');
 
-  // 4. Create a Project Case (Dossier Client)
-  const projectCase = await prisma.projectCase.create({
+  // 4. Create a Work Order (Anciennement Project Case)
+  const workOrder = await prisma.workOrder.create({
     data: {
-      orderNumber: 'CMD-2026-001',
-      customer: 'Restaurant Le Gourmet',
+      orderNumber: 'OF-2026-001', // Remplacé "CMD" par "OF" (Ordre de Fabrication) pour la cohérence
+      customerName: 'Restaurant Le Gourmet', // Ancien: customer
       description: 'Custom tables and chairs',
-      status: CaseStatus.IN_PROGRESS,
+      status: WorkOrderStatus.IN_PROGRESS, // Ancien: CaseStatus
+      // Ajout du champ requis par ton nouveau schéma
+      billOfMaterials: [
+        { item: 'Chêne massif', quantity: 5, unit: 'm3' },
+        { item: 'Pieds métalliques', quantity: 20, unit: 'pcs' },
+      ],
     },
   });
 
-  console.log('✅ Project case created');
+  console.log('✅ Work Order created');
 
   // 5. Create Tasks
   await prisma.task.create({
     data: {
       title: 'Plank cutting',
       description: 'Cut oak planks according to blueprints',
-      type: TaskType.PO,
+      type: TaskType.CUTTING, // Ancien: TaskType.PO
       priority: 2,
-      status: TaskStatus.TO_DO,
+      status: TaskStatus.TODO, // Ancien: TaskStatus.TO_DO
       dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // +7 days
-      estimatedLaborTime: 4.0,
-      caseId: projectCase.id,
-      operatorId: operator1.id,
+      estimatedHumanTime: 4.0, // Ancien: estimatedLaborTime
+      workOrderId: workOrder.id, // Ancien: caseId
+      assignedToId: operator1.id, // Ancien: operatorId
     },
   });
 
@@ -93,11 +98,11 @@ async function main() {
       description: 'Assemble legs and tabletop',
       type: TaskType.ASSEMBLY,
       priority: 1,
-      status: TaskStatus.TO_DO,
+      status: TaskStatus.TODO, // Ancien: TaskStatus.TO_DO
       dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // +10 days
-      estimatedLaborTime: 6.0,
-      caseId: projectCase.id,
-      operatorId: operator1.id,
+      estimatedHumanTime: 6.0, // Ancien: estimatedLaborTime
+      workOrderId: workOrder.id, // Ancien: caseId
+      assignedToId: operator1.id, // Ancien: operatorId
     },
   });
 

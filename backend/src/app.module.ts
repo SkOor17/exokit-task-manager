@@ -6,7 +6,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
-import { ProjectCasesModule } from './project-cases/project-cases.module';
+import { WorkOrdersModule } from './work-orders/work-orders.module';
 
 @Module({
   imports: [
@@ -15,7 +15,7 @@ import { ProjectCasesModule } from './project-cases/project-cases.module';
     AuthModule,
     ConfigModule.forRoot({ isGlobal: true }),
     UsersModule,
-    ProjectCasesModule,
+    WorkOrdersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

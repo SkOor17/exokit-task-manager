@@ -12,11 +12,11 @@ export class QueryTaskDto {
 
   @IsString()
   @IsOptional()
-  operatorId?: string;
+  assignedToId?: string;
 
   @IsString()
   @IsOptional()
-  caseId?: string;
+  workOrderId?: string;
 
   @IsString()
   @IsOptional()
