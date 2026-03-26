@@ -3,3 +3,7 @@
 
 # DB volumes
 db-data
+
+# Frontend
+node_modules
+dist
