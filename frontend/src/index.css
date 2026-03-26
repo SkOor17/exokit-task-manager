@@ -1,0 +1,187 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Typographie & Base */
+  --text: #64748b; /* slate-500 */
+  --text-h: #0f172a; /* slate-900 */
+  --bg: #f8fafc; /* slate-50 pour le fond global de l'app */
+  --border-color: #e2e8f0; /* slate-200 */
+
+  --sans: "Inter Variable", system-ui, sans-serif;
+  font: 14px/145% var(--sans);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+
+  /* --- Variables Shadcn UI --- */
+
+  /* Fond principal (gris très clair) et texte par défaut */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+
+  /* Cartes et Modales (blanc pur pour contraster) */
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  /* Couleur Principale (Le violet de votre marque) */
+  --primary: #78578e;
+  --primary-foreground: #ffffff;
+
+  /* Couleurs secondaires (Boutons gris clair ou actions alternatives) */
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+
+  /* Éléments "Muted" (désactivés, onglets inactifs, fonds de tags) */
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  /* Éléments Accent (hover sur les listes ou menus) */
+  --accent: #f3f0f5; /* Violet très clair */
+  --accent-foreground: #78578e;
+
+  /* Couleur Destructive (Bouton "Terminer" rouge, alertes "Urgent") */
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  /* Bordures et Inputs */
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #78578e; /* Le focus ring reprend le violet principal */
+
+  /* Graphiques / Sémantique (ex: vert pour 100%, jaune pour warning) */
+  --chart-1: #78578e; /* Violet */
+  --chart-2: #10b981; /* Vert (Terminé/Avancement) */
+  --chart-3: #eab308; /* Jaune (Bouton dossier, pauses) */
+  --chart-4: #ef4444; /* Rouge (Retard, Urgent) */
+  --chart-5: #3b82f6; /* Bleu (Tag "En cours") */
+
+  /* Rayons des bordures */
+  --radius: 0.5rem;
+
+  /* --- Sidebar --- */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #475569;
+  --sidebar-primary: #78578e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f3f0f5;
+  --sidebar-accent-foreground: #78578e;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #78578e;
+}
+
+@media (prefers-color-scheme: dark) {
+  /* Ces couleurs sont une suggestion d'adaptation pour le mode sombre, 
+     en gardant votre violet comme accent principal */
+  :root {
+    --text: #94a3b8;
+    --text-h: #f8fafc;
+    --bg: #0f172a;
+    --border-color: #1e293b;
+  }
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+  --popover: #1e293b;
+  --popover-foreground: #f8fafc;
+
+  --primary: #8b6b9f; /* Violet légèrement plus clair pour contraster sur fond sombre */
+  --primary-foreground: #ffffff;
+
+  --secondary: #334155;
+  --secondary-foreground: #f8fafc;
+
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+
+  --accent: #2d2438;
+  --accent-foreground: #c0a5d4;
+
+  --destructive: #f87171;
+  --destructive-foreground: #ffffff;
+
+  --border: #334155;
+  --input: #334155;
+  --ring: #8b6b9f;
+
+  --chart-1: #8b6b9f;
+  --chart-2: #10b981;
+  --chart-3: #eab308;
+  --chart-4: #f87171;
+  --chart-5: #3b82f6;
+
+  --sidebar: #1e293b;
+  --sidebar-foreground: #cbd5e1;
+  --sidebar-primary: #8b6b9f;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2d2438;
+  --sidebar-accent-foreground: #c0a5d4;
+  --sidebar-border: #334155;
+  --sidebar-ring: #8b6b9f;
+}
+
+@theme inline {
+  --font-sans: "Inter Variable", var(--sans);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
