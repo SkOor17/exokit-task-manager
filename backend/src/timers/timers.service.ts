@@ -53,13 +53,14 @@ export class TimersService {
       throw new BadRequestException('You already have an active timer');
     }
 
-    // Créer le timer
+    // Créer le timer (duration initialisé à 0)
     const timer = await this.prisma.timer.create({
       data: {
         taskId,
         userId,
         timeType,
         startTime: new Date(),
+        duration: 0,
       },
       include: {
         task: {
@@ -90,11 +91,12 @@ export class TimersService {
   }
 
   /**
-   * Pauses or resumes a timer. If the timer is currently running, it will be paused. If it's paused, it will be resumed.
-   * Checks that the timer exists, belongs to the user, and is not already finished.
+   * Pauses or resumes a timer.
+   * When pausing: calculate the time elapsed since startTime and add it to duration.
+   * When resuming: update startTime to the current time so the next segment starts correctly.
    * @param timerId - ID of the timer to pause/resume
    * @param userId - ID of the user who owns the timer
-   * @returns The updated timer with the new paused state
+   * @returns The updated timer with the new paused state and accumulated duration
    * @throws NotFoundException if the timer does not exist
    * @throws BadRequestException if the timer does not belong to the user or is already finished
    */
@@ -115,20 +117,46 @@ export class TimersService {
       throw new BadRequestException('This timer is already finished');
     }
 
+    const now = new Date();
+    const isPausing = !timer.isPaused;
+    let newDuration = timer.duration || 0;
+
+    if (isPausing) {
+      // On passe en pause : on ajoute le temps écoulé depuis le dernier startTime
+      const segmentSeconds = Math.floor(
+        (now.getTime() - timer.startTime.getTime()) / 1000,
+      );
+      newDuration += segmentSeconds;
+    }
+
     const updatedTimer = await this.prisma.timer.update({
       where: { id: timerId },
-      data: { isPaused: !timer.isPaused },
+      data: {
+        isPaused: isPausing,
+        duration: newDuration,
+        startTime: now, // Toujours mettre à jour startTime pour le prochain segment
+      },
     });
 
-    // Si on met en pause, on peut optionnellement mettre la tâche en PAUSED
-    // Mais attention si d'autres timers tournent sur la même tâche
-    // Pour l'instant, on se contente de basculer l'état du timer
+    // Optionnel : Mettre à jour le statut de la tâche
+    if (isPausing) {
+      await this.prisma.task.update({
+        where: { id: timer.taskId },
+        data: { status: TaskStatus.PAUSED },
+      });
+    } else {
+      await this.prisma.task.update({
+        where: { id: timer.taskId },
+        data: { status: TaskStatus.IN_PROGRESS },
+      });
+    }
 
     return updatedTimer;
   }
 
   /**
-   * Stops a timer. Checks that the timer exists, belongs to the user, and is not already finished.
+   * Stops a timer.
+   * Calculates the final duration by adding the last segment to the accumulated duration.
    * @param timerId - ID of the timer to stop
    * @param userId - ID of the user who owns the timer
    * @param notes - Optional notes to add when stopping the timer
@@ -137,8 +165,6 @@ export class TimersService {
    * @throws BadRequestException if the timer does not belong to the user or is already finished
    */
   async stopTimer(timerId: string, userId: string, notes?: string) {
-    // TODO: Empêcher l'arrêt d'un timer si la tâche est déjà marquée comme COMPLETED ou VALIDATED
-
     const timer = await this.prisma.timer.findUnique({
       where: { id: timerId },
       include: {
@@ -158,23 +184,30 @@ export class TimersService {
       throw new BadRequestException('This timer is already finished');
     }
 
-    const endTime = new Date();
-    const durationInSeconds = Math.floor(
-      (endTime.getTime() - timer.startTime.getTime()) / 1000,
-    );
-    const durationInHours = durationInSeconds / 3600;
+    const now = new Date();
+    let finalDuration = timer.duration || 0;
+
+    // Si le timer n'était pas en pause, on ajoute le dernier segment
+    if (!timer.isPaused) {
+      const segmentSeconds = Math.floor(
+        (now.getTime() - timer.startTime.getTime()) / 1000,
+      );
+      finalDuration += segmentSeconds;
+    }
 
     // Mettre à jour le timer
     const updatedTimer = await this.prisma.timer.update({
       where: { id: timerId },
       data: {
-        endTime,
-        duration: durationInSeconds,
+        endTime: now,
+        duration: finalDuration,
+        isPaused: false, // Forcer à false une fois terminé
         notes,
       },
     });
 
-    // Mettre à jour le temps cumulé dans la tâche
+    // Mettre à jour le temps cumulé dans la tâche (en heures)
+    const durationInHours = finalDuration / 3600;
     const updateData: Prisma.TaskUpdateInput = {};
     if (timer.timeType === TimeType.HUMAN) {
       updateData.actualHumanTime = { increment: durationInHours };
@@ -184,6 +217,9 @@ export class TimersService {
       updateData.actualOilingTime = { increment: durationInHours };
     }
 
+    // Passer la tâche en COMPLETED si c'était le dernier timer actif ?
+    // Pour l'instant on garde le statut actuel ou on peut forcer COMPLETED selon le besoin
+    // Mais ici on se contente d'ajouter le temps.
     await this.prisma.task.update({
       where: { id: timer.taskId },
       data: updateData,

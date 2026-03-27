@@ -1,0 +1,34 @@
+import { createContext, useContext, type ReactNode } from "react";
+import type { User } from "@/types";
+import { useProfile } from "@/hooks";
+
+interface AuthContextValue {
+  user: User | undefined;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  isManager: boolean;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const { data: user, isLoading } = useProfile();
+
+  const value: AuthContextValue = {
+    user,
+    isLoading,
+    isAuthenticated: !!user,
+    isAdmin: user?.role === "ADMIN",
+    isManager: user?.role === "ADMIN" || user?.role === "MANAGER",
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuthContext() {
+  const ctx = useContext(AuthContext);
+  if (!ctx)
+    throw new Error("useAuthContext doit être utilisé dans AuthProvider");
+  return ctx;
+}

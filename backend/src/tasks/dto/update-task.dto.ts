@@ -45,4 +45,8 @@ export class UpdateTaskDto {
   @IsString()
   @IsOptional()
   assignedToId?: string;
+
+  @IsDateString()
+  @IsOptional()
+  completedAt?: string;
 }
