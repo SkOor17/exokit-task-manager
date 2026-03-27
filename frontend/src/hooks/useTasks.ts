@@ -36,14 +36,15 @@ export function useCreateTask() {
   });
 }
 
-export function useUpdateTask(id: string) {
+export function useUpdateTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (dto: UpdateTaskDto) => TasksService.update(id, dto),
+    mutationFn: ({ id, dto }: { id: string; dto: UpdateTaskDto }) =>
+      TasksService.update(id, dto),
     onSuccess: (updatedTask) => {
-      // Mise à jour optimiste : injecte directement la donnée dans le cache
-      queryClient.setQueryData(taskKeys.detail(id), updatedTask);
+      // Mise à jour du détail et de la liste
+      queryClient.setQueryData(taskKeys.detail(updatedTask.id), updatedTask);
       queryClient.invalidateQueries({ queryKey: taskKeys.all });
     },
   });

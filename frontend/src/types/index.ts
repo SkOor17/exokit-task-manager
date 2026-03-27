@@ -1,4 +1,4 @@
-//  Enums 
+//  Enums
 
 export type Role = "ADMIN" | "MANAGER" | "OPERATOR";
 
@@ -28,7 +28,7 @@ export type WorkOrderStatus =
 
 export type TimeType = "HUMAN" | "MACHINE" | "OILING";
 
-//  Entités 
+//  Entités
 
 export interface User {
   id: string;
@@ -60,9 +60,9 @@ export interface WorkOrder {
   createdAt: string;
   updatedAt: string;
   // Calculé côté frontend ou renvoyé par le backend
-  avancementPct?: number;
+  progress?: number;
   totalTasks?: number;
-  tasksDone?: number;
+  completedTasks?: number;
 }
 
 export interface Task {
@@ -120,7 +120,7 @@ export interface Checklist {
   updatedAt: string;
 }
 
-//  Auth 
+//  Auth
 
 export interface AuthTokens {
   access_token: string;
@@ -131,7 +131,13 @@ export interface LoginCredentials {
   password: string;
 }
 
-//  DTOs (payloads envoyés au backend) 
+export interface RegisterCredentials extends LoginCredentials {
+  firstName: string;
+  lastName: string;
+  role?: Role;
+}
+
+//  DTOs (payloads envoyés au backend)
 
 export type CreateTaskDto = Pick<Task, "title" | "type" | "workOrderId"> &
   Partial<
@@ -150,20 +156,29 @@ export type CreateTaskDto = Pick<Task, "title" | "type" | "workOrderId"> &
   >;
 
 export type UpdateTaskDto = Partial<CreateTaskDto> & {
-  actualHumanTime?: number;
-  actualMachineTime?: number;
-  actualOilingTime?: number;
   completionNotes?: string;
+  completedAt?: string;
 };
 
-export type CreateWorkOrderDto = Pick<WorkOrder, "customerName" | "orderNumber"> &
+export type CreateWorkOrderDto = Pick<
+  WorkOrder,
+  "customerName" | "orderNumber"
+> &
   Partial<Pick<WorkOrder, "description" | "productType" | "expectedDelivery">>;
 
 export type UpdateWorkOrderDto = Partial<
-  CreateWorkOrderDto & { status: WorkOrderStatus }
+  CreateWorkOrderDto & {
+    status: WorkOrderStatus;
+    actualDelivery: string;
+    billOfMaterials: unknown;
+    specifications: unknown;
+    estimatedCost: number;
+    actualCost: number;
+    sellingPrice: number;
+  }
 >;
 
-//  Filtres & pagination 
+//  Filtres & pagination
 
 export interface TaskFilters {
   status?: TaskStatus;
@@ -172,14 +187,4 @@ export interface TaskFilters {
   workOrderId?: string;
   priority?: number;
   search?: string;
-  page?: number;
-  limit?: number;
-}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
 }

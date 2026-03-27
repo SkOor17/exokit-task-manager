@@ -1,11 +1,14 @@
 import { io, type Socket } from "socket.io-client";
 import { apiClient } from "./api-client";
+import type { Timer } from "@/types";
 
 // --- Types ---
 
 export interface ServerToClientEvents {
-  "timer:update": (data: TimerUpdatePayload) => void;
-  "timer:stopped": (data: TimerStoppedPayload) => void;
+  "timer:started": (timer: Timer) => void;
+  "timer:paused": (timer: Timer) => void;
+  "timer:stopped": (timer: Timer) => void;
+  "timer:error": (data: { message: string }) => void;
   "task:updated": (data: { taskId: string }) => void;
 }
 
@@ -24,20 +27,9 @@ export interface ClientToServerEvents {
   ) => void;
 }
 
-export interface TimerUpdatePayload {
-  taskId: string;
-  elapsed: number;
-  status: "running" | "paused";
-}
-
-export interface TimerStoppedPayload {
-  taskId: string;
-  duration: number;
-  timerId: string;
-}
-
 export interface TimerAck {
   success: boolean;
+  timer?: Timer;
   error?: string;
 }
 

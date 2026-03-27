@@ -6,7 +6,7 @@ export const TimersService = {
     return apiClient.get<Timer[]>(`/timers/task/${taskId}`);
   },
 
-  async getActiveTimer(userId: string): Promise<Timer | null> {
-    return apiClient.get<Timer | null>(`/timers/active/${userId}`);
+  async getActiveTimer(): Promise<Timer | null> {
+    return apiClient.get<Timer | null>(`/timers/active`);
   },
 };
