@@ -1,4 +1,4 @@
-export { useProfile, useLogin, useLogout } from "./useAuth";
+export { useProfile, useLogin, useLogout, useRegister } from "./useAuth";
 export {
   useTasks,
   useTask,

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AuthService } from "@/services";
-import type { LoginCredentials } from "@/types";
+import type { LoginCredentials, RegisterCredentials } from "@/types";
 import { socketClient } from "@/lib/socket-client";
 
 export function useProfile() {
@@ -24,6 +24,12 @@ export function useLogin() {
       // Invalide le profil pour le recharger
       queryClient.invalidateQueries({ queryKey: ["auth", "profile"] });
     },
+  });
+}
+
+export function useRegister() {
+  return useMutation({
+    mutationFn: (data: RegisterCredentials) => AuthService.register(data),
   });
 }
 
