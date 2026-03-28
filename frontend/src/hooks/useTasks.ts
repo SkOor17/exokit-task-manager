@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { TasksService } from "@/services";
 import type { CreateTaskDto, TaskFilters, UpdateTaskDto } from "@/types";
+import { workOrderKeys } from "./useWorkOrders";
 
 // Clés de cache centralisées (évite les fautes de frappe)
 export const taskKeys = {
@@ -32,6 +33,7 @@ export function useCreateTask() {
     mutationFn: (dto: CreateTaskDto) => TasksService.create(dto),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: taskKeys.all });
+      queryClient.invalidateQueries({ queryKey: workOrderKeys.all });
     },
   });
 }
@@ -46,6 +48,7 @@ export function useUpdateTask() {
       // Mise à jour du détail et de la liste
       queryClient.setQueryData(taskKeys.detail(updatedTask.id), updatedTask);
       queryClient.invalidateQueries({ queryKey: taskKeys.all });
+      queryClient.invalidateQueries({ queryKey: workOrderKeys.all });
     },
   });
 }
@@ -57,6 +60,7 @@ export function useDeleteTask() {
     mutationFn: (id: string) => TasksService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: taskKeys.all });
+      queryClient.invalidateQueries({ queryKey: workOrderKeys.all });
     },
   });
 }
