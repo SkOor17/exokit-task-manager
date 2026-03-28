@@ -2,6 +2,7 @@ import { useTasks, useWorkOrders } from "@/hooks";
 import { TaskCard } from "@/components/TaskCard";
 import { StatCard } from "@/components/StatCard";
 import { CreateTaskModal } from "@/components/CreateTaskModal";
+import { CreateWorkOrderModal } from "@/components/CreateWorkOrderModal";
 import { useAuthContext } from "@/providers/authProvider";
 import { Link } from "react-router-dom";
 import { useState } from "react";
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const { data: tasks = [], isLoading: tasksLoading } = useTasks();
   const { data: workOrders = [], isLoading: woLoading } = useWorkOrders();
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isWOModalOpen, setIsWOModalOpen] = useState(false);
 
   // Statistiques
   const urgentTasksCount = tasks.filter(
@@ -168,6 +170,7 @@ export default function Dashboard() {
                 variant="outline"
                 className="w-full justify-start h-12 gap-3 rounded-xl border-primary/20 hover:bg-primary/5 hover:text-primary"
                 size="lg"
+                onClick={() => setIsWOModalOpen(true)}
               >
                 <FolderPlus className="size-5" />
                 Nouveau dossier
@@ -237,6 +240,11 @@ export default function Dashboard() {
       <CreateTaskModal
         open={isTaskModalOpen}
         onOpenChange={setIsTaskModalOpen}
+      />
+      
+      <CreateWorkOrderModal
+        open={isWOModalOpen}
+        onOpenChange={setIsWOModalOpen}
       />
     </div>
   );
