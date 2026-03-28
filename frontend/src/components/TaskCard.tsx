@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { useTimer, useUpdateTask } from "@/hooks";
 import { useAuthContext } from "@/providers/authProvider";
 import type { Task } from "@/types";
 import {
@@ -15,6 +14,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTimer } from "@/providers/timerProvider";
+import { useUpdateTask } from "@/hooks";
 
 interface TaskCardProps {
   task: Task;

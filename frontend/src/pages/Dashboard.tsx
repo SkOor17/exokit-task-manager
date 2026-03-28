@@ -1,19 +1,12 @@
-import { useTasks, useTimer } from "@/hooks";
+import { useTasks } from "@/hooks";
 import { TaskCard } from "@/components/TaskCard";
 import { useAuthContext } from "@/providers/authProvider";
-import { useEffect } from "react";
 
 export default function Dashboard() {
   const { user } = useAuthContext();
-  const { restoreActiveTimer } = useTimer();
 
   // On récupère les tâches de l'utilisateur
   const { data: tasks, isLoading, error } = useTasks();
-
-  // Restauration du timer actif au montage
-  useEffect(() => {
-    restoreActiveTimer();
-  }, [restoreActiveTimer]);
 
   const handleCompleteTask = async (taskId: string) => {
     try {
