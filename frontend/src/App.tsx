@@ -12,6 +12,7 @@ import WorkOrders from "./pages/WorkOrders";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import { AppLayout } from "./components/AppLayout";
+import { Toaster } from "@/components/ui/sonner";
 
 // Guard de route : redirige vers /login si non authentifié
 function PrivateRoute() {
@@ -39,6 +40,7 @@ function App() {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <Toaster position="top-right" richColors />
     </BrowserRouter>
   );
 }
