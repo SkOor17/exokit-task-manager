@@ -1,6 +1,7 @@
 import { useTasks } from "@/hooks";
 import { TaskCard } from "@/components/TaskCard";
 import { useAuthContext } from "@/providers/authProvider";
+import { Link } from "react-router-dom";
 
 export default function Dashboard() {
   const { user } = useAuthContext();
@@ -58,9 +59,9 @@ export default function Dashboard() {
               {tasks?.length || 0}
             </span>
           </h2>
-          <button className="text-sm text-primary hover:underline">
+          <Link to="/tasks" className="text-sm text-primary hover:underline">
             Voir tout →
-          </button>
+          </Link>
         </div>
 
         {tasks && tasks.length > 0 ? (
