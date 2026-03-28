@@ -1,8 +1,10 @@
 import { useTasks, useWorkOrders } from "@/hooks";
 import { TaskCard } from "@/components/TaskCard";
 import { StatCard } from "@/components/StatCard";
+import { CreateTaskModal } from "@/components/CreateTaskModal";
 import { useAuthContext } from "@/providers/authProvider";
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import {
   AlertCircle,
   ClipboardList,
@@ -20,6 +22,7 @@ export default function Dashboard() {
   const { user } = useAuthContext();
   const { data: tasks = [], isLoading: tasksLoading } = useTasks();
   const { data: workOrders = [], isLoading: woLoading } = useWorkOrders();
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
   // Statistiques
   const urgentTasksCount = tasks.filter(
@@ -50,6 +53,8 @@ export default function Dashboard() {
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     )
     .slice(0, 5);
+
+  const activeTasks = tasks.filter((t) => t.status !== "COMPLETED");
 
   if (tasksLoading || woLoading) {
     return (
@@ -116,7 +121,7 @@ export default function Dashboard() {
                   variant="secondary"
                   className="bg-primary/10 text-primary"
                 >
-                  {tasks.length}
+                  {activeTasks.length}
                 </Badge>
               </h2>
               <Link
@@ -127,9 +132,9 @@ export default function Dashboard() {
               </Link>
             </div>
 
-            {tasks.length > 0 ? (
+            {activeTasks.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {tasks.slice(0, 6).map((task) => (
+                {activeTasks.slice(0, 6).map((task) => (
                   <TaskCard key={task.id} task={task} />
                 ))}
               </div>
@@ -154,6 +159,7 @@ export default function Dashboard() {
               <Button
                 className="w-full justify-start h-12 gap-3 rounded-xl"
                 size="lg"
+                onClick={() => setIsTaskModalOpen(true)}
               >
                 <PlusCircle className="size-5" />
                 Nouvelle tâche
@@ -227,6 +233,11 @@ export default function Dashboard() {
           </section>
         </div>
       </div>
+
+      <CreateTaskModal
+        open={isTaskModalOpen}
+        onOpenChange={setIsTaskModalOpen}
+      />
     </div>
   );
 }

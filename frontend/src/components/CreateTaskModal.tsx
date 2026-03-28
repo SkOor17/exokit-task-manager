@@ -1,0 +1,189 @@
+import { useForm, type Resolver, type SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useCreateTask, useWorkOrders } from "@/hooks";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import type { TaskType } from "@/types";
+
+const taskSchema = z.object({
+  title: z.string().min(3, "Le titre doit contenir au moins 3 caractères"),
+  description: z.string().optional(),
+  type: z.enum([
+    "CUTTING",
+    "MACHINING",
+    "ASSEMBLY",
+    "FINISHING",
+    "OILING",
+    "PACKAGING",
+    "QUALITY_CHECK",
+  ]),
+  workOrderId: z.string().min(1, "Veuillez sélectionner un dossier"),
+  priority: z.coerce.number().min(1).max(5),
+  estimatedHumanTime: z.coerce.number().optional(),
+});
+
+type TaskFormValues = z.infer<typeof taskSchema>;
+
+interface CreateTaskModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
+  const { mutate: createTask, isPending } = useCreateTask();
+  const { data: workOrders = [] } = useWorkOrders();
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<TaskFormValues>({
+    resolver: zodResolver(taskSchema) as Resolver<TaskFormValues>,
+    defaultValues: {
+      title: "",
+      description: "",
+      type: "ASSEMBLY",
+      priority: 1,
+      workOrderId: "",
+    },
+  });
+
+  // Utilisation explicite du SubmitHandler pour lier correctement les types
+  const onSubmit: SubmitHandler<TaskFormValues> = (data) => {
+    // On s'assure que les données sont au bon format pour le DTO
+    createTask(
+      {
+        title: data.title,
+        description: data.description,
+        type: data.type as TaskType,
+        workOrderId: data.workOrderId,
+        priority: data.priority,
+        estimatedHumanTime: data.estimatedHumanTime,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Tâche créée avec succès");
+          reset();
+          onOpenChange(false);
+        },
+        // Remplacement de 'any' par 'Error' pour un typage strict
+        onError: (error: Error) => {
+          toast.error(error.message || "Erreur lors de la création de la tâche");
+        },
+      }
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Nouvelle tâche</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="title">Titre</Label>
+            <Input
+              id="title"
+              placeholder="Ex: Assemblage cadre A1"
+              {...register("title")}
+              aria-invalid={!!errors.title}
+            />
+            {errors.title && (
+              <p className="text-xs font-medium text-destructive">
+                {errors.title.message}
+              </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="type">Type</Label>
+              <select
+                id="type"
+                className="flex h-8 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                {...register("type")}
+              >
+                <option value="CUTTING">Découpe</option>
+                <option value="MACHINING">Usinage</option>
+                <option value="ASSEMBLY">Assemblage</option>
+                <option value="FINISHING">Finition</option>
+                <option value="OILING">Huilage</option>
+                <option value="PACKAGING">Emballage</option>
+                <option value="QUALITY_CHECK">Contrôle Qualité</option>
+              </select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="priority">Priorité (1-5)</Label>
+              <Input
+                id="priority"
+                type="number"
+                min="1"
+                max="5"
+                {...register("priority")}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="workOrderId">Dossier</Label>
+            <select
+              id="workOrderId"
+              className="flex h-8 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              {...register("workOrderId")}
+              aria-invalid={!!errors.workOrderId}
+            >
+              <option value="">Sélectionner un dossier</option>
+              {workOrders.map((wo) => (
+                <option key={wo.id} value={wo.id}>
+                  {wo.orderNumber} - {wo.customerName}
+                </option>
+              ))}
+            </select>
+            {errors.workOrderId && (
+              <p className="text-xs font-medium text-destructive">
+                {errors.workOrderId.message}
+              </p>
+            )}
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="description">Description (Optionnel)</Label>
+            <textarea
+              id="description"
+              className="flex min-h-[80px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              placeholder="Détails de la tâche..."
+              {...register("description")}
+            />
+          </div>
+
+          <DialogFooter className="pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Annuler
+            </Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Créer la tâche
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
