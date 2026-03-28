@@ -33,21 +33,51 @@ export interface TimerAck {
   error?: string;
 }
 
+// Type utilitaire : extrait uniquement les clés string d'un objet d'events
+type StringKeys<T> = Extract<keyof T, string>;
+
+// Type utilitaire : représente un handler enregistré en attente de connexion
+type PendingHandler<
+  K extends StringKeys<ServerToClientEvents> = StringKeys<ServerToClientEvents>,
+> = {
+  event: K;
+  handler: ServerToClientEvents[K];
+  type: "on" | "off";
+};
+
 // --- Classe SocketClient ---
 
 class SocketClient {
   private socket: Socket<ServerToClientEvents, ClientToServerEvents> | null =
     null;
   private _connected = false;
+  private pendingHandlers: PendingHandler[] = [];
 
   // --- Connexion ---
+
+  private waitForConnection(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.socket?.connected) {
+        resolve();
+        return;
+      }
+
+      const timeout = setTimeout(() => {
+        reject(new Error("Timeout: socket non connecté après 5s"));
+      }, 5_000);
+
+      this.socket?.once("connect", () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+    });
+  }
 
   connect(): void {
     if (this.socket?.connected) return;
 
     const token = apiClient.getToken();
 
-    // On s'assure que l'instance générée respecte strictement nos interfaces
     this.socket = io(import.meta.env.VITE_WS_URL ?? "http://localhost:3000", {
       auth: { token },
       transports: ["websocket"],
@@ -59,6 +89,7 @@ class SocketClient {
     this.socket.on("connect", () => {
       this._connected = true;
       console.info("[Socket] Connecté :", this.socket?.id);
+      this.flushPendingHandlers();
     });
 
     this.socket.on("disconnect", (reason) => {
@@ -71,10 +102,38 @@ class SocketClient {
     });
   }
 
+  // Rejoue tous les on/off mis en attente avant que le socket soit prêt
+  private flushPendingHandlers(): void {
+    for (const { event, handler, type } of this.pendingHandlers) {
+      if (type === "on") {
+        this.registerOn(event, handler);
+      } else {
+        this.registerOff(event, handler);
+      }
+    }
+    this.pendingHandlers = [];
+  }
+
+  // Fonctions intermédiaires qui isolent le cast au bon niveau de généricité
+  private registerOn<K extends StringKeys<ServerToClientEvents>>(
+    event: K,
+    handler: ServerToClientEvents[K],
+  ): void {
+    this.socket?.on(event, handler as never);
+  }
+
+  private registerOff<K extends StringKeys<ServerToClientEvents>>(
+    event: K,
+    handler: ServerToClientEvents[K],
+  ): void {
+    this.socket?.off(event, handler as never);
+  }
+
   disconnect(): void {
     this.socket?.disconnect();
     this.socket = null;
     this._connected = false;
+    this.pendingHandlers = [];
   }
 
   get connected(): boolean {
@@ -83,68 +142,70 @@ class SocketClient {
 
   // --- Abonnement aux events ---
 
-  // L'utilisation de Extract force TypeScript à ignorer les 'number' et 'symbol'
-  on<K extends Extract<keyof ServerToClientEvents, string>>(
+  on<K extends StringKeys<ServerToClientEvents>>(
     event: K,
     handler: ServerToClientEvents[K],
   ): void {
-    if (!this.socket) return;
-
-    // On type la méthode 'on' elle-même pour cette invocation
-    const strictOn = this.socket.on as (
-      ev: K,
-      listener: ServerToClientEvents[K],
-    ) => void;
-    strictOn.call(this.socket, event, handler);
+    if (!this.socket) {
+      this.pendingHandlers.push({ event, handler, type: "on" });
+      return;
+    }
+    this.registerOn(event, handler);
   }
 
-  off<K extends Extract<keyof ServerToClientEvents, string>>(
+  off<K extends StringKeys<ServerToClientEvents>>(
     event: K,
     handler?: ServerToClientEvents[K],
   ): void {
-    if (!this.socket) return;
-
-    const strictOff = this.socket.off as (
-      ev: K,
-      listener?: ServerToClientEvents[K],
-    ) => void;
-    strictOff.call(this.socket, event, handler);
+    if (!this.socket) {
+      this.pendingHandlers = this.pendingHandlers.filter(
+        (h) => h.handler !== handler,
+      );
+      return;
+    }
+    if (handler) this.registerOff(event, handler);
   }
 
   // --- Émission d'events ---
 
-  emit<K extends Extract<keyof ClientToServerEvents, string>>(
+  emit<K extends StringKeys<ClientToServerEvents>>(
     event: K,
     ...args: Parameters<ClientToServerEvents[K]>
   ): void {
     if (!this.socket?.connected) {
-      console.warn("[Socket] Tentative d'émission sans connexion :", event);
-      return;
+      throw new Error(
+        `[Socket] Émission impossible, socket non connecté : ${event}`,
+      );
     }
-
-    // On type la méthode 'emit' pour qu'elle accepte exactement notre événement K et ses arguments
-    const strictEmit = this.socket.emit as (
-      ev: K,
-      ...args: Parameters<ClientToServerEvents[K]>
-    ) => void;
-    strictEmit.apply(this.socket, [event, ...args]);
+    this.socket.emit(event, ...args);
   }
 
-  // --- Helpers timer (sugar syntax) ---
+  // --- Helpers timer ---
 
-  startTimer(taskId: string, userId: string, timeType: string = "HUMAN"): Promise<TimerAck> {
+  async startTimer(
+    taskId: string,
+    userId: string,
+    timeType: string = "HUMAN",
+  ): Promise<TimerAck> {
+    await this.waitForConnection();
     return new Promise((resolve) => {
       this.emit("timer:start", { taskId, userId, timeType }, resolve);
     });
   }
 
-  pauseTimer(timerId: string, userId: string): Promise<TimerAck> {
+  async pauseTimer(timerId: string, userId: string): Promise<TimerAck> {
+    await this.waitForConnection();
     return new Promise((resolve) => {
       this.emit("timer:pause", { timerId, userId }, resolve);
     });
   }
 
-  stopTimer(timerId: string, userId: string, notes?: string): Promise<TimerAck> {
+  async stopTimer(
+    timerId: string,
+    userId: string,
+    notes?: string,
+  ): Promise<TimerAck> {
+    await this.waitForConnection();
     return new Promise((resolve) => {
       this.emit("timer:stop", { timerId, userId, notes }, resolve);
     });
