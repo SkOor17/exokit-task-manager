@@ -28,7 +28,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const navigate = useNavigate();
-  const { mutate: login, isPending } = useLogin();
+  const { mutateAsync: login, isPending } = useLogin();
 
   const {
     register,
@@ -42,16 +42,14 @@ export default function Login() {
     },
   });
 
-  const onSubmit = (data: LoginFormValues) => {
-    login(data, {
-      onSuccess: () => {
-        toast.success("Connexion réussie");
-        navigate("/");
-      },
-      onError: (error) => {
-        toast.error(error.message || "Identifiants invalides");
-      },
-    });
+  const onSubmit = async (data: LoginFormValues) => {
+    try {
+      await login(data);
+      toast.success("Connexion réussie");
+      navigate("/");
+    } catch (error: unknown) {
+      toast.error((error as Error).message || "Identifiants invalides");
+    }
   };
 
   return (

@@ -131,6 +131,7 @@ export interface ChecklistItem {
 
 export interface AuthTokens {
   access_token: string;
+  user: User;
 }
 
 export interface LoginCredentials {

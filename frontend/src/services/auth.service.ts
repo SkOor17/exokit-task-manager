@@ -6,14 +6,16 @@ import type {
   User,
 } from "@/types";
 export const AuthService = {
-  async register(data: RegisterCredentials): Promise<User> {
-    return apiClient.post<User>("/auth/register", data);
+  async register(data: RegisterCredentials): Promise<AuthTokens> {
+    const response = await apiClient.post<AuthTokens>("/auth/register", data);
+    apiClient.setToken(response.access_token);
+    return response;
   },
 
   async login(credentials: LoginCredentials): Promise<AuthTokens> {
-    const tokens = await apiClient.post<AuthTokens>("/auth/login", credentials);
-    apiClient.setToken(tokens.access_token);
-    return tokens;
+    const response = await apiClient.post<AuthTokens>("/auth/login", credentials);
+    apiClient.setToken(response.access_token);
+    return response;
   },
 
   async logout(): Promise<void> {

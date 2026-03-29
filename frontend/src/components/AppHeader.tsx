@@ -28,8 +28,9 @@ export function AppHeader() {
   // Extraction des IDs pour les miettes de pain dynamiques
   const pathSegments = location.pathname.split("/");
   const isTaskDetail = pathSegments.length > 2 && pathSegments[1] === "tasks";
-  const isWorkOrderDetail = pathSegments.length > 2 && pathSegments[1] === "work-orders";
-  
+  const isWorkOrderDetail =
+    pathSegments.length > 2 && pathSegments[1] === "work-orders";
+
   const taskId = isTaskDetail ? pathSegments[2] : "";
   const workOrderId = isWorkOrderDetail ? pathSegments[2] : "";
 
@@ -78,7 +79,9 @@ export function AppHeader() {
             {seg.label}
           </Link>
         ) : (
-          <span className={cn(idx === segments.length - 1 && "text-foreground")}>
+          <span
+            className={cn(idx === segments.length - 1 && "text-foreground")}
+          >
             {seg.label}
           </span>
         )}
@@ -123,7 +126,7 @@ export function AppHeader() {
             {user?.firstName?.[0] || <UserIcon className="size-5" />}
             {user?.lastName?.[0] || ""}
           </div>
-          
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
@@ -137,14 +140,20 @@ export function AppHeader() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Êtes-vous sûr de vouloir vous déconnecter ?</AlertDialogTitle>
+                <AlertDialogTitle>
+                  Êtes-vous sûr de vouloir vous déconnecter ?
+                </AlertDialogTitle>
                 <AlertDialogDescription>
-                  Vous devrez vous reconnecter pour accéder à votre espace de travail.
+                  Vous devrez vous reconnecter pour accéder à votre espace de
+                  travail.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+                <AlertDialogAction
+                  onClick={handleLogout}
+                  className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                >
                   Se déconnecter
                 </AlertDialogAction>
               </AlertDialogFooter>

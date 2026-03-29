@@ -2,13 +2,41 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AuthService } from "@/services";
 import type { LoginCredentials, RegisterCredentials } from "@/types";
 import { socketClient } from "@/lib/socket-client";
+import { apiClient } from "@/lib/api-client";
+
+/**
+ * Hook pour récupérer le token de manière réactive
+ */
+export function useAuthToken() {
+  return useQuery({
+    queryKey: ["auth", "token"],
+    queryFn: () => {
+      return apiClient.getToken();
+    },
+    // Le token ne change que via setQueryData ou refresh manuel
+    staleTime: Infinity,
+  });
+}
 
 export function useProfile() {
+  const { data: token } = useAuthToken();
+
   return useQuery({
-    queryKey: ["auth", "profile"],
-    queryFn: () => AuthService.getProfile(),
-    staleTime: 5 * 60_000, // 5 min
-    retry: false, // ne pas retry si non authentifié
+    queryKey: ["auth", "profile", token],
+    queryFn: async () => {
+      if (!token) return null;
+      try {
+        return await AuthService.getProfile();
+      } catch (error) {
+        if (import.meta.env.DEV)
+          console.error("[useProfile] Fetch error:", error);
+        return null;
+      }
+    },
+    staleTime: 300_000, // 5 min
+    gcTime: 600_000,
+    retry: false,
+    enabled: !!token,
   });
 }
 
@@ -18,11 +46,22 @@ export function useLogin() {
   return useMutation({
     mutationFn: (credentials: LoginCredentials) =>
       AuthService.login(credentials),
-    onSuccess: () => {
-      // Ouvre la connexion socket une fois authentifié
+    onSuccess: async (data) => {
+      // 1. Mettre à jour le token d'abord
+      queryClient.setQueryData(["auth", "token"], data.access_token);
+
+      // 2. Injecter le profil immédiatement
+      queryClient.setQueryData(
+        ["auth", "profile", data.access_token],
+        data.user,
+      );
+
+      // 3. Invalider le reste proprement sans tout effacer brutalement
+      await queryClient.invalidateQueries({
+        predicate: (query) => !query.queryKey.includes("auth"),
+      });
+
       socketClient.connect();
-      // Invalide le profil pour le recharger
-      queryClient.invalidateQueries({ queryKey: ["auth", "profile"] });
     },
   });
 }
@@ -38,9 +77,11 @@ export function useLogout() {
 
   return useMutation({
     mutationFn: () => AuthService.logout(),
-    onSuccess: () => {
+    onSuccess: async () => {
       socketClient.disconnect();
-      // Efface tout le cache React Query
+
+      // Reset complet du cache
+      queryClient.setQueryData(["auth", "token"], null);
       queryClient.clear();
     },
   });

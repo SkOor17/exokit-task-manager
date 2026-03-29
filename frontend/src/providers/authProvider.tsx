@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, type ReactNode, useMemo } from "react";
 import type { User } from "@/types";
 import { useProfile } from "@/hooks";
 
@@ -13,15 +13,18 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { data: user, isLoading } = useProfile();
+  // useProfile est maintenant réactif au cache "auth/token"
+  const { data: user, isLoading, isFetching } = useProfile();
 
-  const value: AuthContextValue = {
-    user,
-    isLoading,
-    isAuthenticated: !!user,
-    isAdmin: user?.role === "ADMIN",
-    isManager: user?.role === "ADMIN" || user?.role === "MANAGER",
-  };
+  const value = useMemo(() => {
+    return {
+      user: user || undefined,
+      isLoading: isLoading || (isFetching && !user),
+      isAuthenticated: !!user,
+      isAdmin: user?.role === "ADMIN",
+      isManager: user?.role === "ADMIN" || user?.role === "MANAGER",
+    };
+  }, [user, isLoading, isFetching]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
