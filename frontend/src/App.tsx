@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Tasks from "./pages/Tasks";
+import TaskDetail from "./pages/TaskDetail";
 import WorkOrders from "./pages/WorkOrders";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -33,6 +34,7 @@ function App() {
           <Route element={<AppLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="tasks" element={<Tasks />} />
+            <Route path="tasks/:id" element={<TaskDetail />} />
             <Route path="work-orders" element={<WorkOrders />} />
           </Route>
         </Route>

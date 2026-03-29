@@ -3,6 +3,7 @@ import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Task } from "@/types";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 
 const columns: ColumnDef<Task>[] = [
   {
@@ -48,6 +49,7 @@ const columns: ColumnDef<Task>[] = [
 
 export default function Tasks() {
   const { data: tasks = [], isLoading } = useTasks();
+  const navigate = useNavigate();
 
   if (isLoading) {
     return (
@@ -62,7 +64,11 @@ export default function Tasks() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Tâches</h1>
       </div>
-      <DataTable columns={columns} data={tasks} />
+      <DataTable
+        columns={columns}
+        data={tasks}
+        onRowClick={(task) => navigate(`/tasks/${task.id}`)}
+      />
     </div>
   );
 }

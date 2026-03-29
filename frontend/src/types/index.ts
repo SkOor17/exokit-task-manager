@@ -72,7 +72,7 @@ export interface Task {
   type: TaskType;
   priority: number;
   status: TaskStatus;
-  dueDate?: string;
+  dueDate: string;
   startedAt?: string;
   completedAt?: string;
   estimatedHumanTime?: number;
@@ -113,11 +113,18 @@ export interface Timer {
 export interface Checklist {
   id: string;
   title: string;
-  items: unknown; // Json: Array of { id, label, checked, required }
+  items: ChecklistItem[]; // Array of { id, label, checked, required }
   isCompleted: boolean;
   taskId: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ChecklistItem {
+  id?: string | number; 
+  label: string;
+  checked: boolean;
+  required?: boolean;
 }
 
 //  Auth
