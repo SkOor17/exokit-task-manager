@@ -19,7 +19,12 @@ import { Toaster } from "@/components/ui/sonner";
 // Guard de route : redirige vers /login si non authentifié
 function PrivateRoute() {
   const { isAuthenticated, isLoading } = useAuthContext();
-  if (isLoading) return <div className="flex h-screen w-screen items-center justify-center font-medium text-muted-foreground animate-pulse">Chargement…</div>;
+  if (isLoading)
+    return (
+      <div className="flex h-screen w-screen items-center justify-center font-medium text-muted-foreground animate-pulse">
+        Chargement…
+      </div>
+    );
   return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
@@ -29,7 +34,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        
+
         {/* Routes protégées */}
         <Route path="/" element={<PrivateRoute />}>
           <Route element={<AppLayout />}>
