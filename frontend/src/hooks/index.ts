@@ -15,3 +15,4 @@ export {
   useDeleteWorkOrder,
   workOrderKeys,
 } from "./useWorkOrders";
+export { useUsers } from "./useUsers";
