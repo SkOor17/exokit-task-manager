@@ -33,8 +33,8 @@ export class CreateTaskDto {
   status?: TaskStatus;
 
   @IsDateString()
-  @IsOptional()
-  dueDate?: string;
+  @IsNotEmpty()
+  dueDate!: string;
 
   @IsNumber()
   @IsOptional()

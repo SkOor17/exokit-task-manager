@@ -16,16 +16,23 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 const workOrderSchema = z.object({
-  orderNumber: z.string().min(3, "Le numéro de commande doit contenir au moins 3 caractères"),
-  customerName: z.string().min(2, "Le nom du client doit contenir au moins 2 caractères"),
+  orderNumber: z
+    .string()
+    .min(3, "Le numéro de commande doit contenir au moins 3 caractères"),
+  customerName: z
+    .string()
+    .min(2, "Le nom du client doit contenir au moins 2 caractères"),
   productType: z.string().optional(),
   description: z.string().optional(),
   // On valide que c'est une date valide si elle est fournie
-  expectedDelivery: z.string().optional().refine((val) => {
-    if (!val || val === "") return true;
-    const date = new Date(val);
-    return !isNaN(date.getTime());
-  }, "La date doit être valide"),
+  expectedDelivery: z
+    .string()
+    .optional()
+    .refine((val) => {
+      if (!val || val === "") return true;
+      const date = new Date(val);
+      return !isNaN(date.getTime());
+    }, "La date doit être valide"),
 });
 
 type WorkOrderFormValues = z.infer<typeof workOrderSchema>;
@@ -35,7 +42,10 @@ interface CreateWorkOrderModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function CreateWorkOrderModal({ open, onOpenChange }: CreateWorkOrderModalProps) {
+export function CreateWorkOrderModal({
+  open,
+  onOpenChange,
+}: CreateWorkOrderModalProps) {
   const { mutate: createWorkOrder, isPending } = useCreateWorkOrder();
 
   const {
@@ -58,9 +68,10 @@ export function CreateWorkOrderModal({ open, onOpenChange }: CreateWorkOrderModa
     // Conversion de la date au format ISO-8601 attendu par le backend
     const formattedData = {
       ...data,
-      expectedDelivery: data.expectedDelivery && data.expectedDelivery !== "" 
-        ? new Date(data.expectedDelivery).toISOString() 
-        : undefined,
+      expectedDelivery:
+        data.expectedDelivery && data.expectedDelivery !== ""
+          ? new Date(data.expectedDelivery).toISOString()
+          : undefined,
     };
 
     createWorkOrder(formattedData, {
@@ -69,7 +80,7 @@ export function CreateWorkOrderModal({ open, onOpenChange }: CreateWorkOrderModa
         reset();
         onOpenChange(false);
       },
-      onError: (error: any) => {
+      onError: (error: Error) => {
         toast.error(error.message || "Erreur lors de la création du dossier");
       },
     });
@@ -122,7 +133,9 @@ export function CreateWorkOrderModal({ open, onOpenChange }: CreateWorkOrderModa
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="expectedDelivery">Date de livraison prévue (Optionnel)</Label>
+            <Label htmlFor="expectedDelivery">
+              Date de livraison prévue (Optionnel)
+            </Label>
             <Input
               id="expectedDelivery"
               type="date"

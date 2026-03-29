@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTimer } from "@/providers/timerProvider";
 import { useUpdateTask } from "@/hooks";
+import { useNavigate } from "react-router-dom";
 
 interface TaskCardProps {
   task: Task;
@@ -27,6 +28,7 @@ export function TaskCard({ task, onComplete }: TaskCardProps) {
   const { user } = useAuthContext();
   const timer = useTimer();
   const updateTask = useUpdateTask();
+  const navigate = useNavigate();
 
   const isThisTaskRunning = timer.taskId === task.id && timer.isRunning;
   const isThisTaskPaused = timer.taskId === task.id && timer.isPaused;
@@ -67,7 +69,8 @@ export function TaskCard({ task, onComplete }: TaskCardProps) {
     }
   };
 
-  const handleComplete = async () => {
+  const handleComplete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       await updateTask.mutateAsync({
         id: task.id,
@@ -90,11 +93,12 @@ export function TaskCard({ task, onComplete }: TaskCardProps) {
   return (
     <Card
       className={cn(
-        "overflow-hidden transition-all duration-300",
+        "overflow-hidden transition-all duration-300 cursor-pointer hover:shadow-md",
         isThisTaskRunning &&
           "border-primary ring-1 ring-primary/20 bg-primary/5",
         isThisTaskPaused && "border-orange-400 bg-orange-50/30",
       )}
+      onClick={() => navigate(`/tasks/${task.id}`)}
     >
       <CardContent className="p-5">
         <div className="flex justify-between items-start mb-4">
@@ -221,7 +225,10 @@ export function TaskCard({ task, onComplete }: TaskCardProps) {
                 variant="default"
                 size="icon"
                 className="size-11 rounded-xl bg-primary hover:bg-primary/90"
-                onClick={handleStartTimer}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleStartTimer();
+                }}
                 disabled={isAnyTimerRunning}
               >
                 <Play className="size-5 fill-current" />
@@ -232,7 +239,10 @@ export function TaskCard({ task, onComplete }: TaskCardProps) {
                   variant="default"
                   size="icon"
                   className="size-11 rounded-xl bg-orange-500 hover:bg-orange-600"
-                  onClick={handlePauseTimer}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePauseTimer();
+                  }}
                 >
                   <Pause className="size-5 fill-current" />
                 </Button>
@@ -240,7 +250,10 @@ export function TaskCard({ task, onComplete }: TaskCardProps) {
                   variant="destructive"
                   size="icon"
                   className="size-11 rounded-xl"
-                  onClick={handleStopTimer}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleStopTimer();
+                  }}
                 >
                   <Square className="size-5 fill-current" />
                 </Button>
@@ -251,7 +264,10 @@ export function TaskCard({ task, onComplete }: TaskCardProps) {
                   variant="default"
                   size="icon"
                   className="size-11 rounded-xl bg-primary hover:bg-primary/90"
-                  onClick={handlePauseTimer}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePauseTimer();
+                  }}
                 >
                   <Play className="size-5 fill-current" />
                 </Button>
@@ -259,7 +275,10 @@ export function TaskCard({ task, onComplete }: TaskCardProps) {
                   variant="destructive"
                   size="icon"
                   className="size-11 rounded-xl"
-                  onClick={handleStopTimer}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleStopTimer();
+                  }}
                 >
                   <Square className="size-5 fill-current" />
                 </Button>
