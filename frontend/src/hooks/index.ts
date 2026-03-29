@@ -7,3 +7,11 @@ export {
   useDeleteTask,
   taskKeys,
 } from "./useTasks";
+export {
+  useWorkOrders,
+  useWorkOrder,
+  useCreateWorkOrder,
+  useUpdateWorkOrder,
+  useDeleteWorkOrder,
+  workOrderKeys,
+} from "./useWorkOrders";
