@@ -1,9 +1,9 @@
-import { 
-  LayoutDashboard, 
-  ListTodo, 
-  Briefcase, 
+import {
+  LayoutDashboard,
+  ListTodo,
+  Briefcase,
   LogOut,
-  ChevronRight
+  ChevronRight,
 } from "lucide-react";
 import {
   Sidebar,
@@ -18,9 +18,21 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useLogout } from "@/hooks";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 const items = [
   {
@@ -42,13 +54,34 @@ const items = [
 
 export function AppSidebar() {
   const location = useLocation();
-  const logout = useLogout();
+  const { mutate: logout } = useLogout();
+  const navigate = useNavigate();
   const { state } = useSidebar();
 
+  const handleLogout = () => {
+    logout(undefined, {
+      onSuccess: () => {
+        toast.success("Déconnexion réussie");
+        navigate("/login");
+      },
+      onError: () => {
+        toast.error("Erreur lors de la déconnexion");
+      },
+    });
+  };
+
   return (
-    <Sidebar collapsible="icon" className="border-r border-border bg-sidebar shadow-sm">
+    <Sidebar
+      collapsible="icon"
+      className="border-r border-border bg-sidebar shadow-sm"
+    >
       <SidebarHeader className="p-4 border-b border-border/50 h-[60px] flex justify-center">
-        <div className={cn("flex items-center gap-3 transition-all duration-300", state === "collapsed" ? "justify-center" : "px-2")}>
+        <div
+          className={cn(
+            "flex items-center gap-3 transition-all duration-300",
+            state === "collapsed" && "justify-center",
+          )}
+        >
           <div className="size-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold shrink-0 shadow-sm">
             E
           </div>
@@ -59,8 +92,8 @@ export function AppSidebar() {
           )}
         </div>
       </SidebarHeader>
-      
-      <SidebarContent className="px-2 py-4">
+
+      <SidebarContent className="py-4">
         <SidebarGroup>
           <SidebarGroupLabel className="px-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">
             Navigation
@@ -71,23 +104,27 @@ export function AppSidebar() {
                 const isActive = location.pathname === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
-                      asChild 
+                    <SidebarMenuButton
+                      asChild
                       isActive={isActive}
                       tooltip={item.title}
                       className={cn(
                         "h-10 transition-all duration-200 group/btn",
-                        isActive 
-                          ? "bg-primary/10 text-primary hover:bg-primary/15" 
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        isActive
+                          ? "bg-primary/10 text-primary hover:bg-primary/15"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
                       )}
                     >
-                      <Link to={item.url} className="flex items-center w-full">
-                        <item.icon className={cn(
-                          "size-4.5 transition-transform duration-200", 
-                          isActive ? "text-primary" : "group-hover/btn:scale-110"
-                        )} />
-                        <span className="ml-3 font-medium">{item.title}</span>
+                      <Link to={item.url}>
+                        <item.icon
+                          className={cn(
+                            "size-4.5 transition-transform duration-200",
+                            isActive
+                              ? "text-primary"
+                              : "group-hover/btn:scale-110",
+                          )}
+                        />
+                        <span>{item.title}</span>
                         {isActive && state !== "collapsed" && (
                           <ChevronRight className="ml-auto size-3 opacity-50" />
                         )}
@@ -104,14 +141,37 @@ export function AppSidebar() {
       <SidebarFooter className="p-2 border-t border-border/50">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton 
-              onClick={() => logout.mutate()}
-              className="h-10 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors group/logout"
-              tooltip="Déconnexion"
-            >
-              <LogOut className="size-4.5 group-hover/logout:translate-x-0.5 transition-transform" />
-              <span className="ml-3 font-medium">Déconnexion</span>
-            </SidebarMenuButton>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <SidebarMenuButton
+                  className="h-10 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors group/logout"
+                  tooltip="Déconnexion"
+                >
+                  <LogOut className="size-4.5 group-hover/logout:translate-x-0.5 transition-transform" />
+                  <span>Déconnexion</span>
+                </SidebarMenuButton>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Êtes-vous sûr de vouloir vous déconnecter ?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Vous devrez vous reconnecter pour accéder à votre espace de
+                    travail.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleLogout}
+                    className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                  >
+                    Se déconnecter
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

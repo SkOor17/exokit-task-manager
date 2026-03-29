@@ -1,7 +1,7 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuthContext } from "@/providers/authProvider";
-import { useLogout } from "@/hooks";
-import { useNavigate } from "react-router-dom";
+import { useLogout, useTask, useWorkOrder } from "@/hooks";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Bell, LogOut, User as UserIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
@@ -17,11 +17,24 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export function AppHeader() {
   const { user } = useAuthContext();
   const { mutate: logout } = useLogout();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Extraction des IDs pour les miettes de pain dynamiques
+  const pathSegments = location.pathname.split("/");
+  const isTaskDetail = pathSegments.length > 2 && pathSegments[1] === "tasks";
+  const isWorkOrderDetail = pathSegments.length > 2 && pathSegments[1] === "work-orders";
+  
+  const taskId = isTaskDetail ? pathSegments[2] : "";
+  const workOrderId = isWorkOrderDetail ? pathSegments[2] : "";
+
+  const { data: task } = useTask(taskId);
+  const { data: workOrder } = useWorkOrder(workOrderId);
 
   const handleLogout = () => {
     logout(undefined, {
@@ -35,15 +48,51 @@ export function AppHeader() {
     });
   };
 
+  const renderBreadcrumb = () => {
+    const path = location.pathname;
+    const segments = [];
+
+    // Racine Accueil (toujours présente)
+    segments.push({ label: "accueil", url: "/" });
+
+    if (path.includes("/tasks")) {
+      segments.push({ label: "tâches", url: "/tasks" });
+      if (pathSegments.length > 2 && pathSegments[1] === "tasks") {
+        segments.push({ label: task?.title || "..." });
+      }
+    } else if (path.includes("/work-orders")) {
+      segments.push({ label: "Dossiers", url: "/work-orders" });
+      if (pathSegments.length > 2 && pathSegments[1] === "work-orders") {
+        segments.push({ label: workOrder?.orderNumber || "..." });
+      }
+    }
+
+    return segments.map((seg, idx) => (
+      <div key={idx} className="flex items-center">
+        {idx > 0 && <span className="mx-2 opacity-30">/</span>}
+        {seg.url && idx < segments.length - 1 ? (
+          <Link
+            to={seg.url}
+            className="hover:text-foreground transition-colors"
+          >
+            {seg.label}
+          </Link>
+        ) : (
+          <span className={cn(idx === segments.length - 1 && "text-foreground")}>
+            {seg.label}
+          </span>
+        )}
+      </div>
+    ));
+  };
+
   return (
     <header className="sticky top-0 z-30 flex h-[60px] w-full items-center justify-between border-b border-border/50 bg-background/95 backdrop-blur-sm px-4 shadow-sm">
       <div className="flex items-center gap-4">
         <SidebarTrigger className="hover:bg-accent transition-colors" />
         <Separator orientation="vertical" className="h-6 opacity-50" />
         <div className="hidden md:flex items-center text-sm font-medium text-muted-foreground">
-          <span>Projet</span>
-          <span className="mx-2 opacity-30">/</span>
-          <span className="text-foreground">Tableau de bord</span>
+          {renderBreadcrumb()}
         </div>
       </div>
 
