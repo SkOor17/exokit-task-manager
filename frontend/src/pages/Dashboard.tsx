@@ -195,9 +195,10 @@ export default function Dashboard() {
               <div className="divide-y divide-border">
                 {recentWorkOrders.length > 0 ? (
                   recentWorkOrders.map((wo) => (
-                    <div
+                    <Link
                       key={wo.id}
-                      className="p-4 hover:bg-slate-50 transition-colors cursor-pointer group"
+                      to={`/work-orders/${wo.id}`}
+                      className="p-4 hover:bg-slate-50 transition-colors cursor-pointer group block"
                     >
                       <div className="flex justify-between items-start mb-1">
                         <span className="text-xs font-bold text-primary group-hover:underline">
@@ -224,7 +225,7 @@ export default function Dashboard() {
                           {wo.progress || 0}%
                         </span>
                       </div>
-                    </div>
+                    </Link>
                   ))
                 ) : (
                   <div className="p-8 text-center text-xs text-muted-foreground">
