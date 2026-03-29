@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Tasks from "./pages/Tasks";
 import TaskDetail from "./pages/TaskDetail";
 import WorkOrders from "./pages/WorkOrders";
+import WorkOrderDetail from "./pages/WorkOrderDetail";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import { AppLayout } from "./components/AppLayout";
@@ -36,6 +37,7 @@ function App() {
             <Route path="tasks" element={<Tasks />} />
             <Route path="tasks/:id" element={<TaskDetail />} />
             <Route path="work-orders" element={<WorkOrders />} />
+            <Route path="work-orders/:id" element={<WorkOrderDetail />} />
           </Route>
         </Route>
 

@@ -3,6 +3,7 @@ import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { WorkOrder } from "@/types";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 
 const columns: ColumnDef<WorkOrder>[] = [
   {
@@ -41,6 +42,7 @@ const columns: ColumnDef<WorkOrder>[] = [
 
 export default function WorkOrders() {
   const { data: workOrders = [], isLoading } = useWorkOrders();
+  const navigate = useNavigate();
 
   if (isLoading) {
     return (
@@ -55,7 +57,11 @@ export default function WorkOrders() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Dossiers</h1>
       </div>
-      <DataTable columns={columns} data={workOrders} />
+      <DataTable
+        columns={columns}
+        data={workOrders}
+        onRowClick={(wo) => navigate(`/work-orders/${wo.id}`)}
+      />
     </div>
   );
 }
