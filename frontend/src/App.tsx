@@ -1,11 +1,56 @@
-import { Button } from "./components/ui/button";
+import { useAuthContext } from "./providers/authProvider";
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+} from "react-router-dom";
+import Dashboard from "./pages/Dashboard";
+import Tasks from "./pages/Tasks";
+import TaskDetail from "./pages/TaskDetail";
+import WorkOrders from "./pages/WorkOrders";
+import WorkOrderDetail from "./pages/WorkOrderDetail";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import { AppLayout } from "./components/AppLayout";
+import { Toaster } from "@/components/ui/sonner";
+
+// Guard de route : redirige vers /login si non authentifié
+function PrivateRoute() {
+  const { isAuthenticated, isLoading } = useAuthContext();
+  if (isLoading)
+    return (
+      <div className="flex h-screen w-screen items-center justify-center font-medium text-muted-foreground animate-pulse">
+        Chargement…
+      </div>
+    );
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
+}
 
 function App() {
   return (
-    <div className="flex flex-col h-screen w-screen items-center justify-center">
-      <div className="text-3xl font-bold">Exokit</div>
-      <Button className="ml-4">Get Started</Button>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* Routes protégées */}
+        <Route path="/" element={<PrivateRoute />}>
+          <Route element={<AppLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="tasks" element={<Tasks />} />
+            <Route path="tasks/:id" element={<TaskDetail />} />
+            <Route path="work-orders" element={<WorkOrders />} />
+            <Route path="work-orders/:id" element={<WorkOrderDetail />} />
+          </Route>
+        </Route>
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <Toaster position="top-right" richColors />
+    </BrowserRouter>
   );
 }
 

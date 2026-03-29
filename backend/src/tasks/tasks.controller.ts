@@ -36,8 +36,6 @@ export class TasksController {
   }
 
   @Post()
-  @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN, Role.MANAGER)
   create(@Body() createTaskDto: CreateTaskDto) {
     return this.tasksService.create(createTaskDto);
   }
