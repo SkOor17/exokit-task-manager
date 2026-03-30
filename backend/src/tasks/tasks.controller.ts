@@ -36,8 +36,8 @@ export class TasksController {
   }
 
   @Post()
-  create(@Body() createTaskDto: CreateTaskDto) {
-    return this.tasksService.create(createTaskDto);
+  create(@Body() createTaskDto: CreateTaskDto, @CurrentUser() user: User) {
+    return this.tasksService.create(createTaskDto, user.id, user.role);
   }
 
   @Patch(':id')

@@ -147,7 +147,10 @@ export interface RegisterCredentials extends LoginCredentials {
 
 //  DTOs (payloads envoyés au backend)
 
-export type CreateTaskDto = Pick<Task, "title" | "type" | "workOrderId"> &
+export type CreateTaskDto = Pick<
+  Task,
+  "title" | "type" | "workOrderId" | "assignedToId"
+> &
   Partial<
     Pick<
       Task,
@@ -159,7 +162,6 @@ export type CreateTaskDto = Pick<Task, "title" | "type" | "workOrderId"> &
       | "estimatedMachineTime"
       | "estimatedOilingTime"
       | "kitDescription"
-      | "assignedToId"
     >
   >;
 
