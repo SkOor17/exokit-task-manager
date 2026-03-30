@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { UpdateTaskModal } from "@/components/UpdateTaskModal";
 
 export default function TaskDetail() {
   const { id } = useParams<{ id: string }>();
@@ -31,10 +32,13 @@ export default function TaskDetail() {
   const timer = useTimer();
   const updateTask = useUpdateTask();
   const [now] = useState(() => Date.now());
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const isThisTaskRunning = timer.taskId === task?.id && timer.isRunning;
   const isThisTaskPaused = timer.taskId === task?.id && timer.isPaused;
   const isAnyTimerRunning = !timer.isIdle;
+
+  const isAdminOrManager = user?.role === "ADMIN" || user?.role === "MANAGER";
 
   const handleStartTimer = async () => {
     if (!user?.id || !task) return;
@@ -120,6 +124,12 @@ export default function TaskDetail() {
     return `${h}h${m > 0 ? ` ${m.toString().padStart(2, "0")}` : ""}`;
   };
 
+  const formatDecimalHours = (hoursDecimal: number) => {
+    const h = Math.floor(hoursDecimal);
+    const m = Math.round((hoursDecimal - h) * 60);
+    return `${h}h${m > 0 ? ` ${m.toString().padStart(2, "0")}` : ""}`;
+  };
+
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6 pb-20">
       {/* Header / Navigation */}
@@ -133,9 +143,16 @@ export default function TaskDetail() {
           <ChevronLeft className="size-4" />
           Retour
         </Button>
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <Edit2 className="size-4 text-muted-foreground" />
-        </Button>
+        {isAdminOrManager && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            onClick={() => setIsEditModalOpen(true)}
+          >
+            <Edit2 className="size-4 text-muted-foreground" />
+          </Button>
+        )}
       </div>
 
       {/* Task Title and Badges */}
@@ -259,9 +276,9 @@ export default function TaskDetail() {
                   Temps humain
                 </p>
                 <p className="text-base font-bold">
-                  {formatSeconds(task.actualHumanTime)}
+                  {formatDecimalHours(task.actualHumanTime)}
                   <span className="text-muted-foreground font-normal ml-1">
-                    / {formatSeconds(task.estimatedHumanTime || 0)} est.
+                    / {formatDecimalHours(task.estimatedHumanTime || 0)} est.
                   </span>
                 </p>
               </div>
@@ -278,9 +295,9 @@ export default function TaskDetail() {
                   Temps machine
                 </p>
                 <p className="text-base font-bold">
-                  {formatSeconds(task.actualMachineTime)}
+                  {formatDecimalHours(task.actualMachineTime)}
                   <span className="text-muted-foreground font-normal ml-1">
-                    / {formatSeconds(task.estimatedMachineTime || 0)} est.
+                    / {formatDecimalHours(task.estimatedMachineTime || 0)} est.
                   </span>
                 </p>
               </div>
@@ -297,9 +314,9 @@ export default function TaskDetail() {
                   Temps huilage
                 </p>
                 <p className="text-base font-bold">
-                  {formatSeconds(task.actualOilingTime)}
+                  {formatDecimalHours(task.actualOilingTime)}
                   <span className="text-muted-foreground font-normal ml-1">
-                    / {formatSeconds(task.estimatedOilingTime || 0)} est.
+                    / {formatDecimalHours(task.estimatedOilingTime || 0)} est.
                   </span>
                 </p>
               </div>
@@ -528,6 +545,12 @@ export default function TaskDetail() {
           Marquer comme terminée
         </Button>
       </div>
+
+      <UpdateTaskModal
+        task={task}
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+      />
     </div>
   );
 }
