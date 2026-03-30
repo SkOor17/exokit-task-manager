@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { UpdateTaskModal } from "@/components/UpdateTaskModal";
 
 export default function TaskDetail() {
   const { id } = useParams<{ id: string }>();
@@ -31,10 +32,13 @@ export default function TaskDetail() {
   const timer = useTimer();
   const updateTask = useUpdateTask();
   const [now] = useState(() => Date.now());
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const isThisTaskRunning = timer.taskId === task?.id && timer.isRunning;
   const isThisTaskPaused = timer.taskId === task?.id && timer.isPaused;
   const isAnyTimerRunning = !timer.isIdle;
+
+  const isAdminOrManager = user?.role === "ADMIN" || user?.role === "MANAGER";
 
   const handleStartTimer = async () => {
     if (!user?.id || !task) return;
@@ -139,9 +143,16 @@ export default function TaskDetail() {
           <ChevronLeft className="size-4" />
           Retour
         </Button>
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <Edit2 className="size-4 text-muted-foreground" />
-        </Button>
+        {isAdminOrManager && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            onClick={() => setIsEditModalOpen(true)}
+          >
+            <Edit2 className="size-4 text-muted-foreground" />
+          </Button>
+        )}
       </div>
 
       {/* Task Title and Badges */}
@@ -534,6 +545,12 @@ export default function TaskDetail() {
           Marquer comme terminée
         </Button>
       </div>
+
+      <UpdateTaskModal
+        task={task}
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+      />
     </div>
   );
 }

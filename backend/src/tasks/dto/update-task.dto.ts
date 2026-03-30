@@ -4,6 +4,7 @@ import {
   IsEnum,
   IsInt,
   IsDateString,
+  IsNumber,
   Min,
 } from 'class-validator';
 import { TaskType, TaskStatus } from '@prisma/client';
@@ -34,6 +35,18 @@ export class UpdateTaskDto {
   @IsOptional()
   dueDate?: string;
 
+  @IsNumber()
+  @IsOptional()
+  estimatedHumanTime?: number;
+
+  @IsNumber()
+  @IsOptional()
+  estimatedMachineTime?: number;
+
+  @IsNumber()
+  @IsOptional()
+  estimatedOilingTime?: number;
+
   @IsString()
   @IsOptional()
   kitDescription?: string;
@@ -41,6 +54,10 @@ export class UpdateTaskDto {
   @IsString()
   @IsOptional()
   completionNotes?: string;
+
+  @IsString()
+  @IsOptional()
+  workOrderId?: string;
 
   @IsString()
   @IsOptional()
