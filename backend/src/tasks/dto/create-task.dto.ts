@@ -57,6 +57,6 @@ export class CreateTaskDto {
   workOrderId!: string;
 
   @IsString()
-  @IsOptional()
-  assignedToId?: string;
+  @IsNotEmpty()
+  assignedToId!: string;
 }

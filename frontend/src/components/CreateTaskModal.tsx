@@ -1,7 +1,8 @@
+import { useEffect } from "react";
 import { useForm, type Resolver, type SubmitHandler, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useCreateTask, useWorkOrders } from "@/hooks";
+import { useCreateTask, useWorkOrders, useUsers, useProfile } from "@/hooks";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,7 @@ const taskSchema = z.object({
   priority: z.coerce.number().min(1).max(5),
   estimatedHumanTime: z.coerce.number().optional(),
   dueDate: z.date().optional(),
+  assignedToId: z.string().min(1, "Veuillez assigner un utilisateur"),
 });
 
 type TaskFormValues = z.infer<typeof taskSchema>;
@@ -52,12 +54,17 @@ interface CreateTaskModalProps {
 export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
   const { mutate: createTask, isPending } = useCreateTask();
   const { data: workOrders = [] } = useWorkOrders();
+  const { data: users = [] } = useUsers();
+  const { data: profile } = useProfile();
+
+  const isAdminOrManager = profile?.role === "ADMIN" || profile?.role === "MANAGER";
 
   const {
     register,
     handleSubmit,
     reset,
     control,
+    setValue,
     formState: { errors },
   } = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema) as Resolver<TaskFormValues>,
@@ -67,12 +74,18 @@ export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
       type: "ASSEMBLY",
       priority: 1,
       workOrderId: "",
+      assignedToId: "",
     },
   });
 
-  // Utilisation explicite du SubmitHandler pour lier correctement les types
+  // Pré-remplir l'assignation pour les opérateurs
+  useEffect(() => {
+    if (profile && !isAdminOrManager) {
+      setValue("assignedToId", profile.id);
+    }
+  }, [profile, isAdminOrManager, setValue, open]);
+
   const onSubmit: SubmitHandler<TaskFormValues> = (data) => {
-    // On s'assure que les données sont au bon format pour le DTO
     createTask(
       {
         title: data.title,
@@ -82,6 +95,7 @@ export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
         priority: data.priority,
         estimatedHumanTime: data.estimatedHumanTime,
         dueDate: data.dueDate?.toISOString(),
+        assignedToId: data.assignedToId,
       },
       {
         onSuccess: () => {
@@ -89,7 +103,6 @@ export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
           reset();
           onOpenChange(false);
         },
-        // Remplacement de 'any' par 'Error' pour un typage strict
         onError: (error: Error) => {
           toast.error(error.message || "Erreur lors de la création de la tâche");
         },
@@ -213,6 +226,41 @@ export function CreateTaskModal({ open, onOpenChange }: CreateTaskModalProps) {
             {errors.workOrderId && (
               <p className="text-xs font-medium text-destructive">
                 {errors.workOrderId.message}
+              </p>
+            )}
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="assignedToId">Assigné à</Label>
+            <select
+              id="assignedToId"
+              className="flex h-8 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              {...register("assignedToId")}
+              disabled={!isAdminOrManager}
+              aria-invalid={!!errors.assignedToId}
+            >
+              {isAdminOrManager ? (
+                <>
+                  <option value="">Sélectionner un utilisateur</option>
+                  {users
+                    .filter((u) => u.isActive)
+                    .map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.firstName} {user.lastName}
+                      </option>
+                    ))}
+                </>
+              ) : (
+                profile && (
+                  <option value={profile.id}>
+                    {profile.firstName} {profile.lastName} (Moi)
+                  </option>
+                )
+              )}
+            </select>
+            {errors.assignedToId && (
+              <p className="text-xs font-medium text-destructive">
+                {errors.assignedToId.message}
               </p>
             )}
           </div>
