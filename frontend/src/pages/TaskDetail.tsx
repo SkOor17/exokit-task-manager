@@ -120,6 +120,12 @@ export default function TaskDetail() {
     return `${h}h${m > 0 ? ` ${m.toString().padStart(2, "0")}` : ""}`;
   };
 
+  const formatDecimalHours = (hoursDecimal: number) => {
+    const h = Math.floor(hoursDecimal);
+    const m = Math.round((hoursDecimal - h) * 60);
+    return `${h}h${m > 0 ? ` ${m.toString().padStart(2, "0")}` : ""}`;
+  };
+
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6 pb-20">
       {/* Header / Navigation */}
@@ -259,9 +265,9 @@ export default function TaskDetail() {
                   Temps humain
                 </p>
                 <p className="text-base font-bold">
-                  {formatSeconds(task.actualHumanTime)}
+                  {formatDecimalHours(task.actualHumanTime)}
                   <span className="text-muted-foreground font-normal ml-1">
-                    / {formatSeconds(task.estimatedHumanTime || 0)} est.
+                    / {formatDecimalHours(task.estimatedHumanTime || 0)} est.
                   </span>
                 </p>
               </div>
@@ -278,9 +284,9 @@ export default function TaskDetail() {
                   Temps machine
                 </p>
                 <p className="text-base font-bold">
-                  {formatSeconds(task.actualMachineTime)}
+                  {formatDecimalHours(task.actualMachineTime)}
                   <span className="text-muted-foreground font-normal ml-1">
-                    / {formatSeconds(task.estimatedMachineTime || 0)} est.
+                    / {formatDecimalHours(task.estimatedMachineTime || 0)} est.
                   </span>
                 </p>
               </div>
@@ -297,9 +303,9 @@ export default function TaskDetail() {
                   Temps huilage
                 </p>
                 <p className="text-base font-bold">
-                  {formatSeconds(task.actualOilingTime)}
+                  {formatDecimalHours(task.actualOilingTime)}
                   <span className="text-muted-foreground font-normal ml-1">
-                    / {formatSeconds(task.estimatedOilingTime || 0)} est.
+                    / {formatDecimalHours(task.estimatedOilingTime || 0)} est.
                   </span>
                 </p>
               </div>

@@ -37,7 +37,7 @@ export default function Dashboard() {
     (t) => t.status === "COMPLETED",
   ).length;
 
-  const totalSeconds = tasks.reduce(
+  const totalHoursDecimal = tasks.reduce(
     (acc, t) =>
       acc +
       (t.actualHumanTime || 0) +
@@ -45,8 +45,9 @@ export default function Dashboard() {
       (t.actualOilingTime || 0),
     0,
   );
-  const totalHours = Math.floor(totalSeconds / 3600);
-  const totalMinutes = Math.floor((totalSeconds % 3600) / 60);
+
+  const totalHours = Math.floor(totalHoursDecimal);
+  const totalMinutes = Math.round((totalHoursDecimal - totalHours) * 60);
   const formattedHours = `${totalHours}h${totalMinutes > 0 ? ` ${totalMinutes}m` : ""}`;
 
   const recentWorkOrders = [...workOrders]
@@ -242,7 +243,7 @@ export default function Dashboard() {
         open={isTaskModalOpen}
         onOpenChange={setIsTaskModalOpen}
       />
-      
+
       <CreateWorkOrderModal
         open={isWOModalOpen}
         onOpenChange={setIsWOModalOpen}
