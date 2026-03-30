@@ -13,15 +13,17 @@ export function useAuthToken() {
     queryFn: () => {
       return apiClient.getToken();
     },
+    // On initialise immédiatement avec la valeur du localStorage pour éviter le flash undefined
+    initialData: () => apiClient.getToken(),
     // Le token ne change que via setQueryData ou refresh manuel
     staleTime: Infinity,
   });
 }
 
 export function useProfile() {
-  const { data: token } = useAuthToken();
+  const { data: token, isLoading: isTokenLoading } = useAuthToken();
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ["auth", "profile", token],
     queryFn: async () => {
       if (!token) return null;
@@ -38,6 +40,13 @@ export function useProfile() {
     retry: false,
     enabled: !!token,
   });
+
+  return {
+    ...query,
+    // On est en chargement si le token est encore en train d'être récupéré
+    // OU si on a un token et que le profil est en cours de chargement
+    isLoading: isTokenLoading || (!!token && query.isLoading),
+  };
 }
 
 export function useLogin() {

@@ -104,7 +104,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       socketClient.off("timer:paused", onTimerUpdate);
       socketClient.off("timer:stopped", onStopped);
     };
-  }, [queryClient]);
+  }, [queryClient, user?.id]);
 
   // Restore active timer on mount
   const restoreActiveTimer = useCallback(async () => {

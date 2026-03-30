@@ -76,6 +76,9 @@ class SocketClient {
   connect(): void {
     if (this.socket?.connected) return;
 
+    // On s'assure de repartir sur une base propre d'handlers en attente si on reconnecte
+    this.pendingHandlers = [];
+
     const token = apiClient.getToken();
 
     this.socket = io(import.meta.env.VITE_WS_URL ?? "http://localhost:3000", {
